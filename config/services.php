@@ -27,6 +27,10 @@ return [
     'resend' => [
         'key' => env('RESEND_KEY'),
     ],
+    'api' => [
+        'username' => env('API_USERNAME'),
+        'password' => env('API_PASSWORD'),
+    ],
 
     'slack' => [
         'notifications' => [

@@ -41,6 +41,16 @@ return [
             'journal_mode' => null,
             'synchronous' => null,
         ],
+        'second_connection' => [
+            'driver' => 'sqlsrv',
+            'url' => env('DB_SECOND_URL'),
+            'database' =>  database_path('database2.sqlite'),
+            'prefix' => '',
+            'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
+            'busy_timeout' => null,
+            'journal_mode' => null,
+            'synchronous' => null,
+        ],
 
         'mysql' => [
             'driver' => 'mysql',

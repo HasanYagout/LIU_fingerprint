@@ -1,0 +1,47 @@
+<?php
+
+namespace App\Jobs;
+
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
+
+class UnblacklistJob implements ShouldQueue
+{
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
+    public function __construct(
+        protected array $studentIds,
+        protected string $username,
+        protected string $password
+    ) {}
+
+    public function handle()
+    {
+        try {
+            $response = Http::withBasicAuth($this->username, $this->password)
+                ->timeout(30)
+                ->post('http://192.168.1.100:2000/api/v1/unblacklist', [
+                    'studentIds' => $this->studentIds, // Changed to studentids
+                    'timestamp' => Carbon::now()->toDateTimeString()
+                ]);
+
+            Log::info("Unblacklist processed", [
+                'count' => count($this->studentIds),
+                'request_payload' => ['studentids' => $this->studentIds],
+                'response' => $response->json()
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Unblacklist failed", [
+                'error' => $e->getMessage(),
+                'studentids' => $this->studentIds
+            ]);
+            $this->release(30);
+        }
+    }
+}
