@@ -12,7 +12,6 @@ class StudentChart extends ChartWidget
 {
     protected static ?string $heading = 'Student Entry Status';
 
-    protected static ?string $pollingInterval = '10s';
 
     /**
      * Holds the state of the filter form.
@@ -24,7 +23,7 @@ class StudentChart extends ChartWidget
      */
     public static function canView(): bool
     {
-        return auth()->user() && auth()->user()->hasRole('Manager');
+        return auth()->user() && !auth()->user()->hasRole('accountant');
     }
 
     /**
@@ -54,34 +53,36 @@ class StudentChart extends ChartWidget
 
     protected function getData(): array
     {
-        // Get start and end dates from the public filterData property.
         $startDate = $this->filterData['startDate'];
         $endDate = $this->filterData['endDate'];
 
-        // Fetch all data from the Sushi model.
-        // Then, filter the collection by the selected date range.
         $stats = AttendanceStat::all()->whereBetween('date', [
             Carbon::parse($startDate)->startOfDay(),
             Carbon::parse($endDate)->endOfDay(),
         ]);
 
-        // Sum the values directly from the model's attributes.
         $totalUnpaidUsers = $stats->sum('unique_not_paid_users');
         $totalEnteredUsers = $stats->sum('unique_entered_users');
-
-        // Calculate the number of paid users.
         $totalPaidUsers = $totalEnteredUsers - $totalUnpaidUsers;
 
-        // Return the data in the format the pie chart widget expects.
         return [
             'datasets' => [
                 [
                     'label' => 'Student Entries',
                     'data' => [$totalPaidUsers, $totalUnpaidUsers],
+
+                    // Light background shades
                     'backgroundColor' => [
-                        'hsl(208, 88%, 57%)', // Blue for Paid
-                        'hsl(348, 83%, 47%)', // Red for Unpaid
+                        'hsl(208, 88%, 85%)', // Light blue
+                        'hsl(348, 83%, 85%)', // Light red
                     ],
+
+                    // Vivid borders
+                    'borderColor' => [
+                        'hsl(208, 88%, 45%)', // Darker vivid blue
+                        'hsl(348, 83%, 45%)', // Darker vivid red
+                    ],
+                    'borderWidth' => 2,
                 ],
             ],
             'labels' => ['Paid Users', 'Unpaid Users'],
