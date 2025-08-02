@@ -27,14 +27,17 @@ class Dashboard extends BaseDashboard
                             ->label('Start Date')
                             ->native(false)
                             ->translateLabel()
-                            ->displayFormat('Y-m-d'),
+                            ->displayFormat('Y-m-d')
+                            ->default(now()->startOfMonth()),
 
-                        DatePicker::make('endDate')
+
+                DatePicker::make('endDate')
                             ->label('End Date')
                             ->translateLabel()
                             ->native(false)
                             ->displayFormat('Y-m-d')
-                            ->default(now()->format('Y-m-d')), // Set default to the current date
+                            ->default(now()->endOfMonth()),
+
                     ])
                     ->extraAttributes([
                         'class'=>'shadow-2xl'

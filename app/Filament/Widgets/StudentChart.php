@@ -12,7 +12,7 @@ class StudentChart extends ChartWidget
 {
     protected static ?string $heading = 'Student Entry Status';
 
-
+    protected static ?int $sort=4;
     /**
      * Holds the state of the filter form.
      */

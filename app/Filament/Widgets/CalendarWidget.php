@@ -55,6 +55,7 @@ use Saade\FilamentFullCalendar\Actions;
 class CalendarWidget extends FullCalendarWidget
 {
     public string|null|\Illuminate\Database\Eloquent\Model $model = AttendanceStat::class;
+    protected static ?int $sort=2;
 
     public function fetchEvents(array $fetchInfo): array
     {
@@ -90,13 +91,10 @@ class CalendarWidget extends FullCalendarWidget
     }
 
 
-
-    public function onDateClick($info): void
+    protected function headerActions(): array
     {
-        // You can handle this similarly if needed
-        // redirect based on date clicked
+        return [];
     }
-
 
 
     public static function canView(): bool

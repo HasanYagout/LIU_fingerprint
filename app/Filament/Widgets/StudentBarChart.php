@@ -14,7 +14,7 @@ class StudentBarChart extends ChartWidget
 
     protected static ?string $heading = 'Monthly Student Entries';
 
-
+    protected static ?int $sort=3;
     /**
      * This widget is only visible to users with the 'Manager' role.
      */
