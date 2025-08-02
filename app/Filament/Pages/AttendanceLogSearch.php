@@ -39,7 +39,6 @@ class AttendanceLogSearch extends Page implements HasForms, HasTable
                 ->default(now()),
             TextInput::make('studentId')
                 ->label('Student ID')
-                ->required()
                 ->numeric(),
         ];
     }
@@ -90,12 +89,21 @@ class AttendanceLogSearch extends Page implements HasForms, HasTable
     {
         return $this->logs;
     }
+    public function mount(): void
+    {
+        $this->date = request()->query('date');
+        $this->studentId = request()->query('studentId');
+
+        if ($this->date) {
+            $this->search();
+        }
+    }
 
     public function search()
     {
         $this->validate([
             'date' => 'required|date',
-            'studentId' => 'required|numeric',
+            'studentId' => 'nullable|numeric',
         ]);
 
         $this->loading = true;
@@ -103,13 +111,18 @@ class AttendanceLogSearch extends Page implements HasForms, HasTable
         $this->logs = [];
 
         try {
+            $payload = [
+                'date' => Carbon::parse($this->date)->format('Ymd'),
+            ];
+
+            if (!empty($this->studentId)) {
+                $payload['uniqueId'] = $this->studentId;
+            }
+
             $response = Http::withBasicAuth(
                 config('services.api.username'),
                 config('services.api.password')
-            )->post('http://172.170.17.5:2001/api/v1/attendance-logs', [
-                'date' => Carbon::parse($this->date)->format('Ymd'),
-                'uniqueId' => $this->studentId,
-            ]);
+            )->post('http://172.170.17.5:2001/api/v1/attendance-logs',$payload);
 
             if ($response->successful()) {
                 $data = $response->json();

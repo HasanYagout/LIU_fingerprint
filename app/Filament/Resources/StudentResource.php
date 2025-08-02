@@ -31,32 +31,45 @@ class StudentResource extends Resource
     protected static ?string $navigationLabel = 'Students';
     protected static ?string $navigationGroup = 'Students';
 
-//    public static function form(Forms\Form $form): Forms\Form
-//    {
-//        return $form
-//            ->schema([
-//                TextInput::make('student_id')
-//                    ->label('Student ID')
-//                    ->required()
-//                    ->unique(ignoreRecord: true),
-//                TextInput::make('name')
-//                    ->label('Full Name')
-//                    ->required(),
-//                TextInput::make('major')
-//                    ->label('Major')
-//                    ->required(),
-//                Select::make('semesters')
-//                    ->relationship('semesters', 'name')
-//                    ->multiple()
-//                    ->preload()
-//                    ->required(),
-//                TextInput::make('percentage')
-//                    ->numeric()
-//                    ->minValue(0)
-//                    ->maxValue(100)
-//                    ->required(),
-//            ]);
-//    }
+    public static function form(Forms\Form $form): Forms\Form
+    {
+        return $form
+            ->schema([
+                TextInput::make('id')
+                    ->label('Student ID')
+                    ->required()
+                    ->hiddenOn('edit')
+                    ->unique(ignoreRecord: true)
+                    ->rules([
+                        'digits:8',  // Must be exactly 8 digits
+                    ]),
+                TextInput::make('name')
+                    ->label('Full Name')
+                    ->hiddenOn('edit')
+                    ->required(),
+                TextInput::make('major')
+                    ->label('Major')
+                    ->hiddenOn('edit')
+                    ->required(),
+                Select::make('semester_id')
+                    ->hiddenOn('edit')
+                    ->options(
+                        Semester::where('status', 1)
+                            ->get()
+                            ->mapWithKeys(function ($semester) {
+                                return [$semester->id => $semester->name . ' - ' . $semester->year];
+                            })
+                    )
+                    ->preload()
+                    ->required(),
+                TextInput::make('percentage')
+                    ->hiddenOn('edit')
+                    ->numeric()
+                    ->minValue(0)
+                    ->maxValue(100)
+                    ->required(),
+            ]);
+    }
 
     public static function table(Tables\Table $table): Tables\Table
     {

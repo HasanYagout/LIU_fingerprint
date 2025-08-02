@@ -2,6 +2,7 @@
 
 namespace App\Imports;
 
+use App\Helpers\Helpers;
 use App\Jobs\BlacklistJob;
 use App\Jobs\RestartJob;
 use App\Jobs\UnblacklistJob;
@@ -69,7 +70,7 @@ class StudentsImport implements ToModel, WithHeadingRow, WithEvents
                 );
 
                 // Determine required percentage based on semester dates
-                $requiredPercentage = $this->getRequiredPercentage();
+                $requiredPercentage = Helpers::getRequiredPercentage($this->semesterId);
 
                 $semester = $this->semester;
                 $semester->students()->syncWithoutDetaching([
@@ -94,29 +95,6 @@ class StudentsImport implements ToModel, WithHeadingRow, WithEvents
         }
     }
 
-    protected function getRequiredPercentage(): int
-    {
-        $now = Carbon::now();
-        $startDate = Carbon::parse($this->semester->start_date);
-        $midtermDate = Carbon::parse($this->semester->midterm_date);
-        $endDate = Carbon::parse($this->semester->end_date);
-
-        // Two weeks before midterm (midterm threshold)
-        $midtermThreshold = $midtermDate->copy()->subWeeks(2);
-        // Two weeks before final (final threshold)
-        $finalThreshold = $endDate->copy()->subWeeks(2);
-
-        if ($now->gte($finalThreshold)) {
-            // After final threshold (two weeks before final) - require 100%
-            return 100;
-        } elseif ($now->gte($midtermThreshold)) {
-            // After midterm threshold (two weeks before midterm) but before final threshold - require 50%
-            return 50;
-        } else {
-            // Before midterm threshold - require 0%
-            return 0;
-        }
-    }
 
     public function registerEvents(): array
     {

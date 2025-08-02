@@ -66,4 +66,29 @@ class Helpers
             'color'      => $color,
         ];
     }
+    public static function getRequiredPercentage(int $semester): int
+    {
+        $semester=Semester::where('status',1)->find($semester);
+        $now = Carbon::now();
+        $startDate = Carbon::parse($semester->start_date);
+        $midtermDate = Carbon::parse($semester->midterm_date);
+        $endDate = Carbon::parse($semester->end_date);
+
+        // Two weeks before midterm (midterm threshold)
+        $midtermThreshold = $midtermDate->copy()->subWeeks(2);
+        // Two weeks before final (final threshold)
+        $finalThreshold = $endDate->copy()->subWeeks(2);
+
+        if ($now->gte($finalThreshold)) {
+            // After final threshold (two weeks before final) - require 100%
+            return 100;
+        } elseif ($now->gte($midtermThreshold)) {
+            // After midterm threshold (two weeks before midterm) but before final threshold - require 50%
+            return 50;
+        } else {
+            // Before midterm threshold - require 0%
+            return 0;
+        }
+    }
+
 }
