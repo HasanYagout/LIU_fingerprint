@@ -21,18 +21,25 @@ class StatsOverview extends BaseWidget
         // Get the filtered data
         $data = $this->getFilteredData();
 
-        return [
+        if (auth()->user() && auth()->user()->hasRole('Manager')) {
+            // If the user is a Manager, get the filtered data.
+            $data = $this->getFilteredData();
 
-            // New stats added here
-            Stat::make('Not Paid Students', $data['statistics']['totalNotPaidUsers'] ?? 'N/A')
-                ->description('Students who entered but didn\'t pay')
-                ->color('danger'),
-            Stat::make('Paid Students', $data['statistics']['totalEnteredUsers'] ?? 'N/A')
-                ->description('Total students who entered')
-                ->color('info'),
-        ];
+            // Return the array of Stat objects.
+            return [
+                Stat::make('Not Paid Students', $data['statistics']['totalNotPaidUsers'] ?? 'N/A')
+                    ->description('Students who entered but didn\'t pay')
+                    ->color('danger'),
+                Stat::make('Paid Students', $data['statistics']['totalEnteredUsers'] ?? 'N/A')
+                    ->description('Total students who entered')
+                    ->color('info'),
+            ];
+        }
+
+        // If the user is not a 'Manager' or is not logged in,
+        // return an empty array. This will hide the stats.
+        return [];
     }
-
 
 
     protected function getFilteredData(): array
