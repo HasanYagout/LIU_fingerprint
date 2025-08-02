@@ -5,6 +5,7 @@ namespace App\Filament\Resources\SemesterResource\Pages;
 use App\Filament\Resources\SemesterResource;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Database\Eloquent\Model;
 
 class EditSemester extends EditRecord
 {
@@ -16,4 +17,6 @@ class EditSemester extends EditRecord
             Actions\DeleteAction::make(),
         ];
     }
+
+
 }

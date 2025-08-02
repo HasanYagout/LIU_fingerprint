@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Jobs\CheckSemesterPeriodJob;
 use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\ServiceProvider;
+use Opcodes\LogViewer\Facades\LogViewer;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -21,7 +22,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-
+        LogViewer::auth(function ($request) {
+            // Only allow authenticated users with 'admin' role
+            return auth()->check() && auth()->user()->hasRole('admin');
+        });
     }
 
 }

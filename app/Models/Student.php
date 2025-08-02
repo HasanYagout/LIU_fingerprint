@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Student extends Model
 {
@@ -14,7 +15,10 @@ class Student extends Model
         'major',
         'percentage'
         ];
-
+    public function exceptions(): HasMany
+    {
+        return $this->hasMany(StudentException::class, 'student_id', 'student_id');
+    }
 
     public function semesters()
     {

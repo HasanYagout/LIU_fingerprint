@@ -25,8 +25,7 @@ class UnblacklistJob implements ShouldQueue
     {
         try {
             $response = Http::withBasicAuth($this->username, $this->password)
-                ->timeout(30)
-                ->post('http://192.168.1.100:2000/api/v1/unblacklist', [
+                ->post('http://172.170.17.5:2001/api/v1/unblacklist', [
                     'studentIds' => $this->studentIds, // Changed to studentids
                     'timestamp' => Carbon::now()->toDateTimeString()
                 ]);

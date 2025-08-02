@@ -6,7 +6,6 @@ use App\Filament\Resources\StudentResource\Pages;
 use App\Filament\Resources\StudentResource\RelationManagers;
 use App\Helpers\Helpers;
 use App\Imports\StudentsImport;
-use Illuminate\Database\Eloquent\Builder;
 use App\Models\Semester;
 use App\Models\Student;
 use Filament\Forms;
@@ -19,6 +18,7 @@ use Filament\Tables;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
@@ -30,107 +30,77 @@ class StudentResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-user-group';
     protected static ?string $navigationLabel = 'Students';
     protected static ?string $navigationGroup = 'Students';
-    public static function getEloquentQuery(): Builder
-    {
-        return parent::getEloquentQuery()
-            ->join('semester_student', 'semester_student.student_id', '=', 'students.student_id')
-            ->join('semesters',         'semesters.id',           '=', 'semester_student.semester_id')
-            ->select([
-                'students.*',
-                'semester_student.percentage as paid_percentage',
-                'semester_student.semester_id as pivot_semester_id',
-                'semesters.name as semester_name',
-            ]);
-    }
-    public static function form(Forms\Form $form): Forms\Form
-    {
-        return $form
-            ->schema([
-                TextInput::make('student_id')
-                    ->label('Student ID')
-                    ->required()
-                    ->unique(ignoreRecord: true),
-                TextInput::make('name')
-                    ->label('Full Name')
-                    ->required(),
-                TextInput::make('major')
-                    ->label('Major')
-                    ->required(),
-                TextInput::make('level')
-                    ->label('Level')
-                    ->required(),
-                Select::make('payment_status')
-                    ->label('Payment Status')
-                    ->options([
-                        'paid' => 'Paid',
-                        'unpaid' => 'Unpaid',
-                        'partial' => 'Partial',
-                    ])
-                    ->required(),
-                TextColumn::make('percentage')
-                    ->label('Paid %')
-                    // 1) Resolve the “current” percentage from pivot
-                    ->getStateUsing(function (Student $record) {
-                        $today = Carbon::now()->startOfDay();
-                        $sem = Semester::where('start_date', '<=', $today)
-                            ->where('end_date', '>=', $today)
-                            ->first();
-                        if (!$sem) {
-                            return 'N/A';
-                        }
-                        $pivot = $record->semesters()
-                            ->where('semester_id', $sem->id)
-                            ->first()?->pivot;
 
-                        return $pivot
-                            ? (int)$pivot->percentage
-                            : 0;
-                    })
-                    // 2) Color‐code green when ≥ threshold, red otherwise
-                    ->colors([
-                        'success' => static function ($state) {
-                            $today = Carbon::now()->startOfDay();
-                            $sem = Semester::where('start_date', '<=', $today)
-                                ->where('end_date', '>=', $today)
-                                ->first();
-                            if (!$sem) {
-                                return false;
-                            }
-                            $phase = $today->lt($sem->midterm_date) ? 'start' : 'midterm';
-                            $required = config("payment_thresholds.{$phase}", 0);
-
-                            return $state >= $required;
-                        },
-                        'danger' => static function ($state) {
-                            $today = Carbon::now()->startOfDay();
-                            $sem = Semester::where('start_date', '<=', $today)
-                                ->where('end_date', '>=', $today)
-                                ->first();
-                            if (!$sem) {
-                                return false;
-                            }
-                            $phase = $today->lt($sem->midterm_date) ? 'start' : 'midterm';
-                            $required = config("payment_thresholds.{$phase}", 0);
-
-                            return $state < $required;
-                        },
-                    ])
-                    ->sortable(),
-            ]);
-    }
+//    public static function form(Forms\Form $form): Forms\Form
+//    {
+//        return $form
+//            ->schema([
+//                TextInput::make('student_id')
+//                    ->label('Student ID')
+//                    ->required()
+//                    ->unique(ignoreRecord: true),
+//                TextInput::make('name')
+//                    ->label('Full Name')
+//                    ->required(),
+//                TextInput::make('major')
+//                    ->label('Major')
+//                    ->required(),
+//                Select::make('semesters')
+//                    ->relationship('semesters', 'name')
+//                    ->multiple()
+//                    ->preload()
+//                    ->required(),
+//                TextInput::make('percentage')
+//                    ->numeric()
+//                    ->minValue(0)
+//                    ->maxValue(100)
+//                    ->required(),
+//            ]);
+//    }
 
     public static function table(Tables\Table $table): Tables\Table
     {
         return $table
-            // ——————————————— Header Action: Import Students ———————————————
             ->headerActions([
+                Action::make('create-exception')
+                    ->label('Create Exception')
+                    ->color('secondary')
+                    ->form([
+                        Select::make('student_id')
+                            ->label('Student')
+                            ->options(Student::all()->pluck('name', 'student_id')->toArray())
+                            ->searchable()
+                            ->required(),
+                        Select::make('semester_id')
+                            ->label('Semester')
+                            ->options(Semester::all()->pluck('name', 'id')->toArray())
+                            ->searchable()
+                            ->required(),
+                        Forms\Components\DatePicker::make('from_date')
+                            ->displayFormat('d-m-Y') // Shows as DD-MM-YYYY
+                            ->required(),
+                        Forms\Components\DatePicker::make('to_date')
+                            ->displayFormat('d-m-Y') // Shows as DD-MM-YYYY
+                            ->required(),
+                        Forms\Components\Textarea::make('reason')
+                            ->label('Reason for Exception'),
+                    ])
+                    ->action(function (array $data): void {
+                        \App\Models\StudentException::create($data);
+
+
+                        Notification::make()
+                            ->title('Exception created successfully')
+                            ->success()
+                            ->send();
+                    }),
                 Action::make('import')
                     ->label('Import Students')
                     ->color('primary')
                     ->form([
                         Select::make('semester_id')
                             ->label('Semester')
-                            ->options(Semester::all()->pluck('name', 'id')->toArray())
+                            ->options(Semester::where('status',1)->pluck('name', 'id')->toArray())
                             ->searchable()
                             ->required(),
                         FileUpload::make('file')
@@ -144,88 +114,235 @@ class StudentResource extends Resource
                             ]),
                     ])
                     ->action(function (array $data): void {
-                        // $data['file'] is something like "imports/abcd1234.xlsx"
                         $semesterId = $data['semester_id'];
                         $relativePath = $data['file'];
                         $fullPath = Storage::disk('local')->path($relativePath);
 
-                        // Import via Laravel Excel
                         Excel::import(new StudentsImport($semesterId), $fullPath);
 
-                        // Show a Filament notification
                         Notification::make()
                             ->title('Students imported successfully')
                             ->success()
                             ->send();
                     })
-                    ->requiresConfirmation() // optional: ask “Are you sure?” before uploading
+                    ->requiresConfirmation()
                     ->size('lg'),
             ])
-            // ——————————————— Table Columns ———————————————
+            ->query(
+                Student::query()
+                    ->with('semesters')
+                    ->join('semester_student', 'students.student_id', '=', 'semester_student.student_id')
+                    ->join('semesters', 'semester_student.semester_id', '=', 'semesters.id')
+                    ->where('semesters.status', 1) // Filter by active status directly
+                    ->select([
+                        'students.*',
+                        'semesters.name as semester_name',
+                        'semesters.year as year',
+                        'semesters.id as semester_id',
+                        'semester_student.percentage as pivot_percentage'
+                    ])
+                    ->distinct('students.id')
+            )
             ->columns([
                 TextColumn::make('student_id')
                     ->label('Student ID')
-                    ->searchable()
+                    ->searchable(query: function (Builder $query, string $search) {
+                        $query->where('students.student_id', 'like', "%{$search}%");
+                    })
                     ->sortable(),
+
                 TextColumn::make('name')
                     ->label('Full Name')
-                    ->searchable()
+                    ->searchable(query: function (Builder $query, string $search) {
+                        $query->where('students.name', 'like', "%{$search}%");
+                    })
                     ->sortable(),
+
                 TextColumn::make('semester_name')
                     ->label('Semester')
-                    ->searchable(['semesters.name'])
-                    ->sortable(['semesters.name']),
+                    ->searchable(query: function (Builder $query, string $search) {
+                        $query->where('semesters.name', 'like', "%{$search}%");
+                    })
+                    ->sortable(),
+
+                TextColumn::make('year')
+                    ->searchable(query: function (Builder $query, string $search) {
+                        $query->where('semesters.year', 'like', "%{$search}%");
+                    })
+                    ->sortable(),
+
+
                 TextColumn::make('major')
                     ->label('Major')
+                    ->searchable(query: function (Builder $query, string $search) {
+                        $query->where('students.major', 'like', "%{$search}%");
+                    })
                     ->sortable(),
 
                 TextColumn::make('paid_pct')
                     ->label('Paid %')
-                    // display the actual paid percentage
                     ->getStateUsing(fn($record) => Helpers::getPaymentStatus(
                         $record->student_id,
-                        $record->pivot_semester_id // or wherever you store semester_id
+                        $record->semester_id
                     )['percentage'])
-                    // color by whether it meets the windowed threshold
-                    ->colors([
-                        'success' => fn($record): bool => Helpers::getPaymentStatus(
-                                $record->student_id,
-                                $record->pivot_semester_id
-                            )['color'] === 'success',
-                        'danger'  => fn($record): bool => Helpers::getPaymentStatus(
-                                $record->student_id,
-                                $record->pivot_semester_id
-                            )['color'] === 'danger',
-                    ])
-                    ->sortable(['semester_student.percentage'])
-                    ->description(fn($record) => 'Required: '
-                        . Helpers::getPaymentStatus(
+                    ->color(fn($record) => Helpers::getPaymentStatus(
+                        $record->student_id,
+                        $record->semester_id
+                    )['color'])
+                    ->sortable()
+                    ->description(fn($record) => 'Required: ' .
+                        Helpers::getPaymentStatus(
                             $record->student_id,
-                            $record->pivot_semester_id
+                            $record->semester_id
                         )['required'] . '%')
-
-
             ])
-            // ——————————————— Table Filters ———————————————
             ->filters([
                 SelectFilter::make('payment_status')
                     ->label('Payment Status')
                     ->options([
-                        'paid' => 'Paid',
-                        'unpaid' => 'Unpaid',
-                        'partial' => 'Partial',
-                    ]),
+                        'paid' => 'Paid (Met Requirements)',
+                        'not_paid' => 'Not Paid (Below Requirements)',
+                    ])
+                    ->query(function (Builder $query, array $data) {
+                        if (empty($data['value'])) {
+                            return;
+                        }
+
+                        // Only proceed for "not paid" filter
+                        if ($data['value'] === 'not_paid') {
+                            $query->where(function($q) {
+                                $q->whereHas('semesters', function($semesterQuery) {
+                                    $semesterQuery->where('status', 1) // Active semesters only
+                                    ->where(function($subQuery) {
+                                        // Get all students in active semesters
+                                        $students = Student::with(['semesters' => function($q) {
+                                            $q->where('status', 1);
+                                        }])->get();
+
+                                        // Filter students using your existing function
+                                        $unpaidStudentIds = [];
+                                        foreach ($students as $student) {
+                                            foreach ($student->semesters as $semester) {
+                                                $paymentStatus = Helpers::getPaymentStatus(
+                                                    $student->student_id,
+                                                    $semester->id
+                                                );
+                                                if ($paymentStatus['percentage'] < $paymentStatus['required']) {
+                                                    $unpaidStudentIds[] = $student->id;
+                                                    break; // Student is unpaid in at least one semester
+                                                }
+                                            }
+                                        }
+
+                                        // Apply filter to only show unpaid students
+                                        $subQuery->whereIn('students.id', $unpaidStudentIds);
+                                    });
+                                });
+                            });
+                        } else {
+                            // For "paid" filter - same logic but with >= comparison
+                            $query->where(function($q) {
+                                $q->whereHas('semesters', function($semesterQuery) {
+                                    $semesterQuery->where('status', 1)
+                                        ->where(function($subQuery) {
+                                            $students = Student::with(['semesters' => function($q) {
+                                                $q->where('status', 1);
+                                            }])->get();
+
+                                            $paidStudentIds = [];
+                                            foreach ($students as $student) {
+                                                $allPaid = true;
+                                                foreach ($student->semesters as $semester) {
+                                                    $paymentStatus = Helpers::getPaymentStatus(
+                                                        $student->student_id,
+                                                        $semester->id
+                                                    );
+                                                    if ($paymentStatus['percentage'] < $paymentStatus['required']) {
+                                                        $allPaid = false;
+                                                        break;
+                                                    }
+                                                }
+                                                if ($allPaid) {
+                                                    $paidStudentIds[] = $student->id;
+                                                }
+                                            }
+
+                                            $subQuery->whereIn('students.id', $paidStudentIds);
+                                        });
+                                });
+                            });
+                        }
+                    }),
+//                SelectFilter::make('semester')
+//                    ->options(function () {
+//                        return Semester::query()
+//                            // only those semesters referenced in semester_student:
+//                            ->join('semester_student', 'semesters.id', '=', 'semester_student.semester_id')
+//                            // pick only the name, once each
+//                            ->distinct('semesters.name')
+//                            ->pluck('semesters.name', 'semesters.name')
+//                            ->toArray();
+//                    })
+//                    ->query(function (Builder $query, array $data) {
+//                        if (empty($data['value'])) {
+//                            return;
+//                        }
+//
+//                        // filter by name
+//                        $query->where('semesters.name', $data['value']);
+//                    })
+//                    ->searchable()
+//                    ->preload(),
+
+//        SelectFilter::make('year')
+//                    ->label('Year')
+//                    ->options(function () {
+//                        return Semester::query()
+//                            ->select('year')
+//                            ->distinct()
+//                            ->orderBy('year', 'desc')
+//                            ->pluck('year', 'year');
+//                    })
+//                    ->query(function (Builder $query, $data) {
+//                        if (!$data['value']) return;
+//
+//                        $query->where('semesters.year', $data['value']);
+//                    }),
+
+                SelectFilter::make('major')
+                    ->label('Major')
+                    ->options(function () {
+                        return Student::query()
+                            ->select('major')
+                            ->distinct()
+                            ->orderBy('major')
+                            ->pluck('major', 'major');
+                    })
+                    ->query(function (Builder $query, $data) {
+                        if (!$data['value']) return;
+
+                        $query->where('students.major', $data['value']);
+                    })
+                    ->searchable(),
             ])
-            // ——————————————— Row Actions ———————————————
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
-            // ——————————————— Bulk Actions ———————————————
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make(),
             ]);
     }
+
+    public static function getRelations(): array
+    {
+        return [
+            RelationManagers\SemestersRelationManager::class,
+            RelationManagers\ExceptionsRelationManager::class,
+
+        ];
+    }
+
 
     public static function getPages(): array
     {

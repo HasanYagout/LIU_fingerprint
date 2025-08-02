@@ -2,6 +2,9 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\AttendanceCalendar;
+use App\Filament\Pages\Dashboard;
+use App\Filament\Widgets\AttendanceSearch;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -18,6 +21,9 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
+use Joaopaulolndev\FilamentEditProfile\FilamentEditProfilePlugin;
+use Saade\FilamentFullCalendar\FilamentFullCalendarPlugin;
+
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -31,15 +37,19 @@ class AdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Amber,
             ])
+            ->brandLogo(asset('img/logo.png'))
+            ->brandLogoHeight('3rem') // Adjust this value as needed
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
-                Pages\Dashboard::class,
+                Dashboard::class
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
-                Widgets\AccountWidget::class,
-                Widgets\FilamentInfoWidget::class,
+//                Widgets\AccountWidget::class,
+//                Widgets\FilamentInfoWidget::class,
+//                AttendanceSearch::class,
+
             ])
             ->middleware([
                 EncryptCookies::class,
@@ -52,9 +62,24 @@ class AdminPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
             ])
-->plugins([
-    FilamentShieldPlugin::make(),
-])
+            ->plugins([
+                FilamentShieldPlugin::make(),
+                FilamentFullCalendarPlugin::make(),
+                FilamentEditProfilePlugin::make()
+                    ->slug('my-profile')
+                    ->setTitle('My Profile')
+                    ->setNavigationLabel('My Profile')
+                    ->setNavigationGroup('Group Profile')
+                    ->setIcon('heroicon-o-user')
+                    ->setSort(10)
+                    ->canAccess(fn () => auth()->user()->id === 1)
+                    ->shouldRegisterNavigation(true)
+                    ->shouldShowEmailForm()
+                    ->shouldShowDeleteAccountForm(false)
+                    ->shouldShowBrowserSessionsForm()
+
+
+            ])
             ->authMiddleware([
                 Authenticate::class,
             ]);

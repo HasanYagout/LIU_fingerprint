@@ -8,6 +8,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 
+
 class TUser extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */

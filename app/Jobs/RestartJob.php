@@ -24,7 +24,7 @@ class RestartJob implements ShouldQueue
     {
         try {
             $response = Http::withBasicAuth($this->username, $this->password)
-                ->post('http://192.168.1.100:2000/api/v1/restart-services');
+                ->post('http://172.170.17.5:2001/api/v1/restart-services');
 
             Log::info("Service restart completed");
         } catch (\Exception $e) {

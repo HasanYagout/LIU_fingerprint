@@ -23,32 +23,48 @@ class StudentsImport implements ToModel, WithHeadingRow, WithEvents
     protected array $toBlacklist = [];
     protected array $toUnblacklist = [];
     protected Semester $semester;
+    protected array $ignoredIds = [
+        62030104,
+        62110453,
+        62110155,
+        62130320,
+        62110105,
+        62130067
+    ];
 
     public function __construct(int $semesterId)
     {
         $this->semesterId = $semesterId;
-        $this->apiUsername = 'admin';
-        $this->apiPassword = 'unis2025';
+        $this->apiUsername = config('services.api.username');
+        $this->apiPassword = config('services.api.password');
         $this->semester = Semester::findOrFail($semesterId);
+
+        // Initialize unblacklist with ignored IDs
+        $this->toUnblacklist = $this->ignoredIds;
     }
 
     public function model(array $row)
     {
-        if (empty($row['student_id']) || empty($row['name'])) {
+        if (empty($row['id']) || empty($row['name'])) {
             throw new \Exception("Missing required student data");
+        }
+        $studentId = (int)$row['id'];
+
+        // Skip processing if this ID is in the ignored list
+        if (in_array($studentId, $this->ignoredIds)) {
+            Log::info("Skipping ignored student ID", ['student_id' => $studentId]);
+            return null;
         }
 
         try {
             return DB::transaction(function () use ($row) {
-                $studentId = (int)$row['student_id'];
-                $percentage = (int)($row['percentage'] ?? 0);
-
+                $studentId = (int)$row['id'];
+                $percentage = (int)($row['paid'] ?? 0);
                 $student = Student::updateOrCreate(
                     ['student_id' => $studentId],
                     [
                         'name' => $row['name'],
                         'major' => $row['major'] ?? null,
-                        'email' => $row['email'] ?? null,
                     ]
                 );
 
@@ -71,7 +87,7 @@ class StudentsImport implements ToModel, WithHeadingRow, WithEvents
             });
         } catch (\Exception $e) {
             Log::error("Failed to process student", [
-                'student_id' => $row['student_id'] ?? null,
+                'student_id' => $row['id'] ?? null,
                 'error' => $e->getMessage()
             ]);
             return null;
@@ -106,6 +122,11 @@ class StudentsImport implements ToModel, WithHeadingRow, WithEvents
     {
         return [
             AfterImport::class => function(AfterImport $event) {
+                // Ensure ignored IDs are always in unblacklist (remove duplicates)
+                $this->toUnblacklist = array_unique(
+                    array_merge($this->toUnblacklist, $this->ignoredIds)
+                );
+
                 // Dispatch blacklist/unblacklist jobs for all students
                 if (!empty($this->toBlacklist)) {
                     BlacklistJob::dispatch(
