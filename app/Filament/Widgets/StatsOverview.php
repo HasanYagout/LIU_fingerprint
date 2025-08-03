@@ -33,6 +33,9 @@ class StatsOverview extends BaseWidget
                 Stat::make('Paid Students', $data['statistics']['totalEnteredUsers'] ?? 'N/A')
                     ->description('Total students who entered')
                     ->color('info'),
+                Stat::make('All Students', $data['statistics']['totalEnteredUsers']+$data['statistics']['totalNotPaidUsers'] ?? 'N/A')
+                    ->description('Total students')
+                    ->color('primary'),
             ];
         }
 
