@@ -21,7 +21,7 @@ class StatsOverview extends BaseWidget
         // Get the filtered data
         $data = $this->getFilteredData();
 
-        if (auth()->user() && auth()->user()->hasRole('Manager')) {
+        if (auth()->user() && !auth()->user()->hasRole('accountant')) {
             // If the user is a Manager, get the filtered data.
             $data = $this->getFilteredData();
 

@@ -3,23 +3,26 @@
 namespace App\Filament\Widgets;
 
 use Filament\Widgets\ChartWidget;
+use Filament\Widgets\Concerns\InteractsWithPageFilters;
 use Illuminate\Support\Facades\Auth;
 use App\Models\AttendanceStat; // Import your AttendanceStat model
 use Carbon\Carbon;
 
 class StudentBarChart extends ChartWidget
 {
+    use InteractsWithPageFilters;
+
     protected static ?string $heading = 'Monthly Student Entries';
 
-    protected static ?string $pollingInterval = '10s';
 
     /**
      * This widget is only visible to users with the 'Manager' role.
      */
     public static function canView(): bool
     {
-        return auth()->user() && auth()->user()->hasRole('Manager');
+        return auth()->user() && !auth()->user()->hasRole('accountant');
     }
+
 
     protected function getData(): array
     {
@@ -52,16 +55,23 @@ class StudentBarChart extends ChartWidget
                 [
                     'label' => 'Total Entered Users',
                     'data' => $totalEnteredData,
-                    'borderColor' => 'hsl(208, 88%, 57%)', // Blue color
+                    'borderColor' => 'hsl(208, 88%, 45%)',       // Vivid blue border
+                    'backgroundColor' => 'hsl(208, 88%, 85%)',    // Soft blue fill
+                    'fill' => true,                               // Fill under line (if line chart)
+                    'borderWidth' => 2,
                 ],
                 [
                     'label' => 'Unpaid Users',
                     'data' => $unpaidUsersData,
-                    'borderColor' => 'hsl(348, 83%, 47%)', // Red color
+                    'borderColor' => 'hsl(348, 83%, 45%)',        // Vivid red border
+                    'backgroundColor' => 'hsl(348, 83%, 85%)',     // Soft red fill
+                    'fill' => true,
+                    'borderWidth' => 2,
                 ],
             ],
             'labels' => $labels,
         ];
+
     }
 
     protected function getType(): string
