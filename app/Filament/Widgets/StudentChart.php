@@ -3,6 +3,7 @@
 namespace App\Filament\Widgets;
 
 use Filament\Widgets\ChartWidget;
+use Filament\Widgets\Concerns\InteractsWithPageFilters;
 use Illuminate\Support\Facades\Auth;
 use App\Models\AttendanceStat; // Import your AttendanceStat model
 use Carbon\Carbon;
@@ -10,6 +11,7 @@ use Filament\Forms\Components\DatePicker;
 
 class StudentChart extends ChartWidget
 {
+    use InteractsWithPageFilters;
     protected static ?string $heading = 'Student Entry Status';
 
     protected static ?int $sort=4;
@@ -23,7 +25,7 @@ class StudentChart extends ChartWidget
      */
     public static function canView(): bool
     {
-        return auth()->user() && !auth()->user()->hasRole('accountant');
+        return auth()->user() && !auth()->user()->hasRole('Accountant');
     }
 
     /**
@@ -53,34 +55,36 @@ class StudentChart extends ChartWidget
 
     protected function getData(): array
     {
-        $startDate = $this->filterData['startDate'];
-        $endDate = $this->filterData['endDate'];
+        $filters = $this->filters;
 
-        $stats = AttendanceStat::all()->whereBetween('date', [
-            Carbon::parse($startDate)->startOfDay(),
-            Carbon::parse($endDate)->endOfDay(),
-        ]);
+        $startDate = $filters['startDate'] ?? now()->startOfMonth()->format('Y-m-d');
+        $endDate = $filters['endDate'] ?? now()->endOfMonth()->format('Y-m-d');
+        $start = \Illuminate\Support\Carbon::parse($startDate)->startOfDay();
+        $end = Carbon::parse($endDate)->endOfDay();
 
+        $stats = AttendanceStat::query()
+            ->whereBetween('date', [$start, $end])
+            ->get();
         $totalUnpaidUsers = $stats->sum('unique_not_paid_users');
         $totalEnteredUsers = $stats->sum('unique_entered_users');
-        $totalPaidUsers = $totalEnteredUsers - $totalUnpaidUsers;
+
 
         return [
             'datasets' => [
                 [
                     'label' => 'Student Entries',
-                    'data' => [$totalPaidUsers, $totalUnpaidUsers],
+                    'data' => [$totalEnteredUsers, $totalUnpaidUsers],
 
                     // Light background shades
                     'backgroundColor' => [
-                        'hsl(208, 88%, 85%)', // Light blue
-                        'hsl(348, 83%, 85%)', // Light red
+                        'hsl(133, 88%, 90%)', // Light blue
+                        'hsl(348, 83%, 90%)', // Light red
                     ],
 
                     // Vivid borders
                     'borderColor' => [
-                        'hsl(208, 88%, 45%)', // Darker vivid blue
-                        'hsl(348, 83%, 45%)', // Darker vivid red
+                        'hsl(133, 88%, 60%)',
+                        'hsl(348, 83%, 60%)',
                     ],
                     'borderWidth' => 2,
                 ],

@@ -24,7 +24,7 @@ class StatsOverview extends BaseWidget
         // Get the filtered data
         $data = $this->getFilteredData();
 
-        if (auth()->user() && !auth()->user()->hasRole('accountant')) {
+        if (auth()->user() && !auth()->user()->hasRole('Accountant')) {
             // If the user is a Manager, get the filtered data.
             $data = $this->getFilteredData();
 
@@ -51,15 +51,17 @@ class StatsOverview extends BaseWidget
     protected function getFilteredData(): array
     {
         $filters = $this->filters;
+
         $startDate = $filters['startDate'] ?? now()->startOfMonth()->format('Y-m-d');
         $endDate = $filters['endDate'] ?? now()->endOfMonth()->format('Y-m-d');
-
         $start = Carbon::parse($startDate)->startOfDay();
         $end = Carbon::parse($endDate)->endOfDay();
 
         // Fetch and filter Sushi demo data
         $stats = AttendanceStat::query()
+            ->whereBetween('date', [$start, $end])
             ->get();
+
         $totalDays = $stats->count();
         $totalUniqueEntries = $stats->sum('unique_entered_users'); // or `unique_entries` if using separate column
         $totalNotPaidUsers = $stats->sum('unique_not_paid_users');

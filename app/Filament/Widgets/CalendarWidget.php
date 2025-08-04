@@ -59,12 +59,13 @@ class CalendarWidget extends FullCalendarWidget
 
     public function fetchEvents(array $fetchInfo): array
     {
+
         return AttendanceStat::all()->map(function (AttendanceStat $event) {
             return [
                 'id'    => $event->id,
-                'title' => $event->title,
-                'start' => $event->start,
-                'end'   => $event->end,
+                'title' => "Entries: {$event['unique_entered_users']} (Unpaid: {$event['unique_not_paid_users']})",
+                'start' => $event->date,
+                'end'   => $event->date,
             ];
         })->toArray();
     }

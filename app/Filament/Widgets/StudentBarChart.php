@@ -20,14 +20,23 @@ class StudentBarChart extends ChartWidget
      */
     public static function canView(): bool
     {
-        return auth()->user() && !auth()->user()->hasRole('accountant');
+        return auth()->user() && !auth()->user()->hasRole('Accountant');
     }
 
 
     protected function getData(): array
     {
+        $filters = $this->filters;
+
+        $startDate = $filters['startDate'] ?? now()->startOfMonth()->format('Y-m-d');
+        $endDate = $filters['endDate'] ?? now()->endOfMonth()->format('Y-m-d');
+        $start = \Illuminate\Support\Carbon::parse($startDate)->startOfDay();
+        $end = Carbon::parse($endDate)->endOfDay();
+
         // Fetch all data from the Sushi model.
-        $stats = AttendanceStat::all();
+        $stats = AttendanceStat::query()
+            ->whereBetween('date', [$start, $end])
+            ->get();
 
         // Group the statistics by month and year.
         $monthlyStats = $stats->groupBy(function ($stat) {

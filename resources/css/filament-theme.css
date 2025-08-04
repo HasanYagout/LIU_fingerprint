@@ -1,0 +1,8 @@
+/* resources/css/filament-theme.css */
+:root {
+    --primary: #0b4df5; /* fallback */
+}
+
+.text-primary {
+    color: var(--primary) !important;
+}
