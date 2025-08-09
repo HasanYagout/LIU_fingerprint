@@ -47,6 +47,7 @@ namespace App\Filament\Widgets;
 //    }
 //}
 use App\Models\AttendanceStat;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\HtmlString;
 use Saade\FilamentFullCalendar\Widgets\FullCalendarWidget;
 use Saade\FilamentFullCalendar\Actions;
@@ -59,15 +60,27 @@ class CalendarWidget extends FullCalendarWidget
 
     public function fetchEvents(array $fetchInfo): array
     {
-
-        return AttendanceStat::all()->map(function (AttendanceStat $event) {
-            return [
-                'id'    => $event->id,
-                'title' => "Entries: {$event['unique_entered_users']} (Unpaid: {$event['unique_not_paid_users']})",
-                'start' => $event->date,
-                'end'   => $event->date,
-            ];
-        })->toArray();
+        $start = Carbon::parse($fetchInfo['start'])->format('Y-m-d');
+        $end = Carbon::parse($fetchInfo['end'])->format('Y-m-d');
+        return AttendanceStat::query()
+            ->whereBetween('start', [$start, $end])
+            ->get()
+            ->map(function (AttendanceStat $event) {
+                return [
+                    'id' => $event->id,
+                    'title' => "Entries: {$event->unique_entered_users} (Unpaid: {$event->unique_not_paid_users})",
+                    'start' => $event->start,
+                    'end' => $event->end,
+                    'extendedProps' => [
+                        'unique_entries' => $event->unique_entries,
+                        'unique_entered_users' => $event->unique_entered_users,
+                        'unique_not_paid_users' => $event->unique_not_paid_users,
+                    ],
+                    // Optional: add color coding based on some condition
+                    'color' => $event->unique_not_paid_users > 0 ? '#f87171' : '#34d399',
+                ];
+            })
+            ->toArray();
     }
 
     protected function modalActions(): array
@@ -78,7 +91,6 @@ class CalendarWidget extends FullCalendarWidget
     public function onEventClick(array $event): void
     {
         $date = \Carbon\Carbon::parse($event['start'])->format('Y-m-d');
-
         // Optionally: you can pass student ID if available in event['extendedProps']
         $studentId = $event['extendedProps']['student_id'] ?? null;
 

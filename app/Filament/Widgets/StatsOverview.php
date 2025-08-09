@@ -57,10 +57,8 @@ class StatsOverview extends BaseWidget
         $start = Carbon::parse($startDate)->startOfDay();
         $end = Carbon::parse($endDate)->endOfDay();
 
-        // Fetch and filter Sushi demo data
-        $stats = AttendanceStat::query()
-            ->whereBetween('date', [$start, $end])
-            ->get();
+        AttendanceStat::setDateRange($start->format('Ymd'), $end->format('Ymd'));
+        $stats = AttendanceStat::all();
 
         $totalDays = $stats->count();
         $totalUniqueEntries = $stats->sum('unique_entered_users'); // or `unique_entries` if using separate column

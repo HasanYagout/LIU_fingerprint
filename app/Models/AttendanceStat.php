@@ -1,56 +1,70 @@
 <?php
-
 namespace App\Models;
 
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
 use Sushi\Sushi;
 
 class AttendanceStat extends Model
 {
     use Sushi;
 
-    /**
-     * Define the data structure and how to cast the types.
-     */
     protected $casts = [
-        'date' => 'date',
-        'unique_entered_users' => 'integer',
-        'unique_not_paid_users' => 'integer',
+        'start' => 'date',
+        'end' => 'date',
     ];
+    protected static $startDate;
+    protected static $endDate;
 
-    /**
-     * Provides static demo data instead of fetching from an API.
-     */
+    public static function setDateRange($start, $end)
+    {
+        static::$startDate = $start;
+        static::$endDate = $end;
+        static::clearBootedModels(); // Clear cached data
+    }
     public function getRows(): array
     {
-        // Static demo data matching the structure of your API response.
-        $demoStats = [
-            [
-                'date' => '20250822',
-                'uniqueEnteredUsers' => 4,
-                'uniqueNotPaidUsers' => 2,
-            ],
-            [
-                'date' => '20250725',
-                'uniqueEnteredUsers' => 5,
-                'uniqueNotPaidUsers' => 5,
-            ],
-            [
-                'date' => '20250627',
-                'uniqueEnteredUsers' => 6,
-                'uniqueNotPaidUsers' => 4,
-            ],
-        ];
+        $start = static::$startDate ?? now()->subDays(15)->format('Ymd');
+        $end = static::$endDate ?? now()->addDays(15)->format('Ymd');
 
-        // Map over the demo stats to format them for the Sushi model,
-        // just as the original API call did.
-        return collect($demoStats)->map(function ($stat) {
-            return [
-                'date' => Carbon::createFromFormat('Ymd', $stat['date'])->toDateString(),
-                'unique_entered_users' => $stat['uniqueEnteredUsers'],
-                'unique_not_paid_users' => $stat['uniqueNotPaidUsers'],
-            ];
-        })->toArray();
+        try {
+            $response = Http::withBasicAuth(config('services.api.username'), config('services.api.password'))
+                ->timeout(10)
+                ->post('http://192.168.8.118:2000/api/v1/attendance-stats', [
+                    'startDate' => $start,
+                    'endDate' => $end,
+                ]);
+
+            if ($response->successful() && $response->json('success')) {
+                $stats = $response->json('dailyStats') ?? [];
+                return collect($stats)->map(function ($stat) {
+                    $date = Carbon::createFromFormat('Ymd', $stat['date'])->toDateString();
+
+                    return [
+                        'id' => $stat['date'],
+                        'title' => "Entries: {$stat['uniqueEntries']} (Unpaid: {$stat['uniqueNotPaidUsers']})",
+                        'start' => $date,
+                        'end' => $date,
+                        // Add any additional fields you need
+                        'unique_entries' => $stat['uniqueEntries'],
+                        'unique_entered_users' => $stat['uniqueEnteredUsers'],
+                        'unique_not_paid_users' => $stat['uniqueNotPaidUsers'],
+                    ];
+                })->toArray();
+            }
+
+            Log::error('Attendance stats API request failed', [
+                'status' => $response->status(),
+                'response' => $response->body(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Attendance stats API request exception', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return [];
     }
 }

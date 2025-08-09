@@ -2,26 +2,17 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
+use Sushi\Sushi;
 
 class AttendanceLog extends Model
 {
-    use \Sushi\Sushi;
+    use Sushi;
 
-    // provide at least an empty array so that count([]) works
-    protected array $rows = [];
-
-    // OPTIONAL: if you plan to load from an API on each request,
-    // implement getRows() instead of $rows, but remember that
-    // it won’t cache between requests:
-    public function getRows(): array
-    {
-        // return your API‐fetched logs here
-        return $this->rows;
-    }
-
-    // If your rows array might be empty, also define the schema:
-    protected array $schema = [
+    protected $schema = [
         'C_Date'   => 'string',
         'C_Time'   => 'string',
         'C_Name'   => 'string',
@@ -29,4 +20,73 @@ class AttendanceLog extends Model
         'L_Mode'   => 'integer',
         'L_Result' => 'integer',
     ];
+
+    protected static $date;
+    protected static $studentId;
+    protected static $currentPage = 1;
+    protected static $itemsPerPage = 10;
+    public static $totalRecords = 0;
+
+    public static function setSearchParameters($date, $studentId = null, $page = 1, $perPage = 10)
+    {
+        static::$date = $date;
+        static::$studentId = $studentId;
+        static::$currentPage = $page;
+        static::$itemsPerPage = $perPage;
+        static::clearBootedModels();
+    }
+
+    public function getRows(): array
+    {
+        if (!static::$date) {
+            return [];
+        }
+
+        try {
+            $payload = [
+                'date' => Carbon::parse(static::$date)->format('Ymd'),
+                'page' => static::$currentPage,
+                'pageSize' => static::$itemsPerPage,
+            ];
+
+            if (!empty(static::$studentId)) {
+                $payload['uniqueId'] = static::$studentId;
+            }
+
+            $response = Http::withBasicAuth(
+                config('services.api.username'),
+                config('services.api.password')
+            )
+                ->timeout(10)
+                ->post('http://192.168.8.118:2000/api/v1/attendance-logs', $payload);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                static::$totalRecords = $data['pagination']['totalRecords'] ?? count($data['logs'] ?? []);
+                return $data['logs'] ?? [];
+            }
+
+            Log::error('Attendance logs API request failed', [
+                'status' => $response->status(),
+                'response' => $response->body(),
+                'request' => $payload,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Attendance logs API request exception', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return [];
+    }
+
+    public function getPerPage()
+    {
+        return static::$itemsPerPage;
+    }
+
+    protected function sushiShouldCache()
+    {
+        return false;
+    }
 }

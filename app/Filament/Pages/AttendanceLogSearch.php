@@ -9,11 +9,11 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Pages\Page;
-use Illuminate\Support\Facades\Http;
 use Filament\Tables;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class AttendanceLogSearch extends Page implements HasForms, HasTable
 {
@@ -28,12 +28,10 @@ class AttendanceLogSearch extends Page implements HasForms, HasTable
     public $studentId;
     public $loading = false;
     public $error = null;
-    public $logs = [];
 
     protected function getFormSchema(): array
     {
         return [
-
             DatePicker::make('date')
                 ->required()
                 ->default(now()),
@@ -75,28 +73,50 @@ class AttendanceLogSearch extends Page implements HasForms, HasTable
                         3 => 'Failed',
                         default => $state,
                     };
+                })
+                ->badge()
+                ->color(fn (string $state): string => match ($state) {
+                    '0' => 'success',
+                    '3' => 'danger',
+                    default => 'gray',
                 }),
         ];
     }
 
-    protected function getTableQuery()
+    protected function getTableQuery(): Builder
     {
-
-        return AttendanceLog::query();
+        return AttendanceLog::query(); // Dummy query to satisfy Filament
     }
 
-    protected function getTableData(): array
+    protected function paginateTableQuery(Builder $query): LengthAwarePaginator
     {
-        return $this->logs;
+        $page = $this->getTablePage(); // ✅ Correct way to get Livewire-managed page number
+        $perPage = $this->getTableRecordsPerPage();
+
+        AttendanceLog::setSearchParameters($this->date, $this->studentId, $page, $perPage);
+        AttendanceLog::clearBootedModels(); // To refresh Sushi data
+
+        $items = AttendanceLog::all(); // Fetched from API
+        $total = AttendanceLog::$totalRecords;
+
+        return new LengthAwarePaginator(
+            $items,
+            $total,
+            $perPage,
+            $page,
+            [
+                'path' => request()->url(),
+                'query' => request()->query(),
+            ]
+        );
     }
+
     public function mount(): void
     {
-        $this->date = request()->query('date');
-        $this->studentId = request()->query('studentId');
-
-        if ($this->date) {
-            $this->search();
-        }
+        $this->form->fill([
+            'date' => request()->query('date', now()->format('Y-m-d')),
+            'studentId' => request()->query('studentId'),
+        ]);
     }
 
     public function search()
@@ -108,43 +128,12 @@ class AttendanceLogSearch extends Page implements HasForms, HasTable
 
         $this->loading = true;
         $this->error = null;
-        $this->logs = [];
 
-        try {
-            $payload = [
-                'date' => Carbon::parse($this->date)->format('Ymd'),
-            ];
-
-            if (!empty($this->studentId)) {
-                $payload['uniqueId'] = $this->studentId;
-            }
-
-            $response = Http::withBasicAuth(
-                config('services.api.username'),
-                config('services.api.password')
-            )->post('http://172.170.17.5:2001/api/v1/attendance-logs',$payload);
-
-            if ($response->successful()) {
-                $data = $response->json();
-                $this->logs = $data['logs'] ?? [];
-            } else {
-                \Log::error('Attendance API Error', [
-                    'status' => $response->status(),
-                    'response' => $response->body(),
-                    'request' => [
-                        'date' => $this->date,
-                        'studentId' => $this->studentId
-                    ],
-                    'url' => 'http://172.170.17.5:2001/api/v1/attendance-logs'
-                ]);
-                $this->error = 'Failed to fetch data: ' . $response->status();
-            }
-        } catch (\Exception $e) {
-            $this->error = 'Error: ' . $e->getMessage();
-        } finally {
-            $this->loading = false;
-        }
+        $this->resetPage();
+        $this->loading = false;
     }
+
+
 
     protected function getTableRecordsPerPageSelectOptions(): array
     {

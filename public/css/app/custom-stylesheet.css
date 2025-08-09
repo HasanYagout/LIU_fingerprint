@@ -1,8 +1,18 @@
-/* resources/css/filament-theme.css */
-:root {
-    --primary: #0b4df5; /* fallback */
+.fi-ta-header-cell{
+   background-color: rgb(217, 119, 6);
+}
+.fi-pagination-records-per-page-select{
+    display: none !important;
 }
 
-.text-primary {
-    color: var(--primary) !important;
+.fi-ta-header-cell-label{
+    color: white !important;
+}
+/* Style the pagination buttons */
+.fi-ta-pagination-item {
+    @apply bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700;
+}
+
+.fi-ta-pagination-item-active {
+    @apply bg-primary-500 border-primary-500 text-white hover:bg-primary-600;
 }
