@@ -28,6 +28,10 @@ class AttendanceLogSearch extends Page implements HasForms, HasTable
     public $studentId;
     public $loading = false;
     public $error = null;
+    public static function canAccess(): bool
+    {
+      return  auth()->user() &&  !auth()->user()->hasRole('manager');
+    }
 
     protected function getFormSchema(): array
     {
@@ -90,13 +94,20 @@ class AttendanceLogSearch extends Page implements HasForms, HasTable
 
     protected function paginateTableQuery(Builder $query): LengthAwarePaginator
     {
-        $page = $this->getTablePage(); // ✅ Correct way to get Livewire-managed page number
+        $page = $this->getTablePage();
         $perPage = $this->getTableRecordsPerPage();
 
-        AttendanceLog::setSearchParameters($this->date, $this->studentId, $page, $perPage);
-        AttendanceLog::clearBootedModels(); // To refresh Sushi data
+        // Set the parameters for the API call
+        AttendanceLog::setSearchParameters(
+            $this->date,
+            $this->studentId,
+            $page,
+            $perPage
+        );
 
-        $items = AttendanceLog::all(); // Fetched from API
+        // Clear cached data and fetch fresh results
+        AttendanceLog::clearBootedModels();
+        $items = AttendanceLog::all();
         $total = AttendanceLog::$totalRecords;
 
         return new LengthAwarePaginator(
@@ -109,6 +120,31 @@ class AttendanceLogSearch extends Page implements HasForms, HasTable
                 'query' => request()->query(),
             ]
         );
+    }
+
+    protected function getTableRecordsPerPageSelectOptions(): array
+    {
+        // Use the API's page size as the maximum
+        $apiPageSize = AttendanceLog::$apiPageSize ?? 100;
+
+        // Standard options that are <= API's max size
+        $options = [10, 25, 50];
+
+        // Add the API page size if it's not already included
+        if (!in_array($apiPageSize, $options)) {
+            $options[] = $apiPageSize;
+        }
+
+        // Sort and return
+        sort($options);
+        return $options;
+    }
+
+    public function getTableRecordsPerPage(): int
+    {
+        // Get the first available option or fallback to 10
+        $options = $this->getTableRecordsPerPageSelectOptions();
+        return AttendanceLog::$apiPageSize ?? $options[0] ?? 10;
     }
 
     public function mount(): void
@@ -135,8 +171,5 @@ class AttendanceLogSearch extends Page implements HasForms, HasTable
 
 
 
-    protected function getTableRecordsPerPageSelectOptions(): array
-    {
-        return [10, 25, 50, 100];
-    }
+
 }

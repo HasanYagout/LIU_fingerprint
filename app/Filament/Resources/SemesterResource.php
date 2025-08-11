@@ -21,6 +21,10 @@ class SemesterResource extends Resource
     protected static ?string $model = Semester::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    public static function canAccess(): bool
+    {
+       return auth()->user() && !auth()->user()->hasRole('manager');
+    }
 
     public static function form(Form $form): Form
     {

@@ -24,7 +24,9 @@ class AttendanceLog extends Model
     protected static $date;
     protected static $studentId;
     protected static $currentPage = 1;
-    protected static $itemsPerPage = 10;
+    protected static $itemsPerPage = 20;
+    // In your AttendanceLog model
+    public static $apiPageSize = 100; // Default value
     public static $totalRecords = 0;
 
     public static function setSearchParameters($date, $studentId = null, $page = 1, $perPage = 10)
@@ -58,11 +60,16 @@ class AttendanceLog extends Model
                 config('services.api.password')
             )
                 ->timeout(10)
-                ->post('http://192.168.8.118:2000/api/v1/attendance-logs', $payload);
-
+                ->post('http://192.168.1.62:2000/api/v1/attendance-logs', $payload);
+            dd($response->json());
             if ($response->successful()) {
+
+
+
                 $data = $response->json();
-                static::$totalRecords = $data['pagination']['totalRecords'] ?? count($data['logs'] ?? []);
+                static::$totalRecords = $data['pagination']['totalRecords'] ?? 0;
+                static::$apiPageSize = $data['pagination']['pageSize'] ?? 100; // Store API page size
+
                 return $data['logs'] ?? [];
             }
 
