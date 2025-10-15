@@ -4,8 +4,10 @@
 namespace App\Console\Commands;
 
 use App\Jobs\CheckStudentExceptions;
+use App\Jobs\RetryFailedJobs;
 use App\Jobs\UpdateStudentStatuses;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Artisan;
 
 class UpdateStudentStatusesCommand extends Command
 {
@@ -15,6 +17,7 @@ class UpdateStudentStatusesCommand extends Command
 
     public function handle()
     {
+        RetryFailedJobs::dispatch();
         $this->info('Dispatching student status update job...');
         CheckStudentExceptions::dispatch();
         $this->info('Job dispatched successfully!');

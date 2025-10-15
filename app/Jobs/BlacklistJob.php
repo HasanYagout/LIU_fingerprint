@@ -25,7 +25,7 @@ class BlacklistJob implements ShouldQueue
     {
         try {
             $response = Http::withBasicAuth($this->username, $this->password)
-                ->post('http://172.170.17.5:2001/api/v1/blacklist', [
+                ->post('http://170.170.17.6:2001/api/v1/blacklist', [
                     'studentIds' => $this->studentIds, // Changed to studentids
                     'timestamp' => Carbon::now()->toDateTimeString()
                 ]);

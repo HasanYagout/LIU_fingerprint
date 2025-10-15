@@ -14,6 +14,8 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Filament\Support\Enums\MaxWidth;
+
 
 class AttendanceLogSearch extends Page implements HasForms, HasTable
 {
@@ -29,6 +31,15 @@ class AttendanceLogSearch extends Page implements HasForms, HasTable
     public $loading = false;
     public $error = null;
 
+    public function getMaxContentWidth(): MaxWidth|string|null
+    {
+        return 'full';
+    }
+
+    // public static function canAccess(): bool
+    // {
+    //   return  auth()->user() &&  auth()->user()->hasPermissionTo('page_AttendanceLogSearch');
+    // }
     protected function getFormSchema(): array
     {
         return [
@@ -40,6 +51,7 @@ class AttendanceLogSearch extends Page implements HasForms, HasTable
                 ->numeric(),
         ];
     }
+
 
     protected function getTableColumns(): array
     {
@@ -56,30 +68,24 @@ class AttendanceLogSearch extends Page implements HasForms, HasTable
             Tables\Columns\TextColumn::make('C_Unique')
                 ->label('Student ID')
                 ->searchable(),
-            Tables\Columns\TextColumn::make('L_Mode')
+                Tables\Columns\TextColumn::make('L_Result')
                 ->label('Mode')
                 ->formatStateUsing(function ($state) {
                     return match($state) {
-                        1 => 'Entry',
-                        3 => 'Exit',
-                        default => $state,
-                    };
-                }),
-            Tables\Columns\TextColumn::make('L_Result')
-                ->label('Result')
-                ->formatStateUsing(function ($state) {
-                    return match($state) {
-                        0 => 'Success',
-                        3 => 'Failed',
-                        default => $state,
+                        0 => 'Entry',
+                        default => 'No Permission',
                     };
                 })
                 ->badge()
-                ->color(fn (string $state): string => match ($state) {
-                    '0' => 'success',
-                    '3' => 'danger',
-                    default => 'gray',
+                ->color(function ($state) {
+                    return match($state) {
+                        0 => 'success',  // Green for Entry
+                        default => 'danger', // Gray for No Permission
+                    };
                 }),
+            Tables\Columns\TextColumn::make('L_TID')
+                ->label('Terminal')
+,
         ];
     }
 
@@ -90,13 +96,20 @@ class AttendanceLogSearch extends Page implements HasForms, HasTable
 
     protected function paginateTableQuery(Builder $query): LengthAwarePaginator
     {
-        $page = $this->getTablePage(); // ✅ Correct way to get Livewire-managed page number
+        $page = $this->getTablePage();
         $perPage = $this->getTableRecordsPerPage();
 
-        AttendanceLog::setSearchParameters($this->date, $this->studentId, $page, $perPage);
-        AttendanceLog::clearBootedModels(); // To refresh Sushi data
+        // Set the parameters for the API call
+        AttendanceLog::setSearchParameters(
+            $this->date,
+            $this->studentId,
+            $page,
+            $perPage
+        );
 
-        $items = AttendanceLog::all(); // Fetched from API
+        // Clear cached data and fetch fresh results
+        AttendanceLog::clearBootedModels();
+        $items = AttendanceLog::all();
         $total = AttendanceLog::$totalRecords;
 
         return new LengthAwarePaginator(
@@ -109,6 +122,37 @@ class AttendanceLogSearch extends Page implements HasForms, HasTable
                 'query' => request()->query(),
             ]
         );
+    }
+
+    protected function getTablePaginationView(): string
+{
+    return view('filament.pages.summary');
+}
+
+    protected function getTableRecordsPerPageSelectOptions(): array
+    {
+        // Use the API's page size as the maximum
+        $apiPageSize = AttendanceLog::$apiPageSize ?? 100;
+
+
+        // Standard options that are <= API's max size
+        $options = [10, 25, 50];
+
+        // Add the API page size if it's not already included
+        if (!in_array($apiPageSize, $options)) {
+            $options[] = $apiPageSize;
+        }
+
+        // Sort and return
+        sort($options);
+        return $options;
+    }
+
+    public function getTableRecordsPerPage(): int
+    {
+        // Get the first available option or fallback to 10
+        $options = $this->getTableRecordsPerPageSelectOptions();
+        return AttendanceLog::$apiPageSize ?? $options[0] ?? 10;
     }
 
     public function mount(): void
@@ -133,10 +177,15 @@ class AttendanceLogSearch extends Page implements HasForms, HasTable
         $this->loading = false;
     }
 
-
-
-    protected function getTableRecordsPerPageSelectOptions(): array
+    protected function getTablePaginationEnabled(): bool
     {
-        return [10, 25, 50, 100];
+        return true;
     }
+
+    protected function getTablePaginationSummaryEnabled(): bool
+    {
+        return true;
+    }
+
+
 }

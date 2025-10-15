@@ -5,6 +5,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
+use App\Models\AttendanceLog;
 
 Route::get('/', function () {
     return redirect('admin');
@@ -12,6 +13,9 @@ Route::get('/', function () {
 
 
 Route::get('/test', function () {
+
+
+    dd(AttendanceLog::all());
     $timezone = 'Asia/Aden';
     $targetHour = 6;
 

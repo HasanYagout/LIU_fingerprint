@@ -22,5 +22,16 @@
         </form>
 
         {{ $this->table }}
+        @if ($this->getTableRecords()->count())
+            <div class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                Showing
+                <span class="font-medium">{{ $this->getTableRecords()->firstItem() }}</span>
+                to
+                <span class="font-medium">{{ $this->getTableRecords()->lastItem() }}</span>
+                of
+                <span class="font-medium">{{ $this->getTableRecords()->total() }}</span>
+                records
+            </div>
+        @endif
     </div>
 </x-filament::page>

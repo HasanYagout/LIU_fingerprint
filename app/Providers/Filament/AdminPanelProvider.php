@@ -5,10 +5,12 @@ namespace App\Providers\Filament;
 use App\Filament\Pages\AttendanceCalendar;
 use App\Filament\Pages\Dashboard;
 use App\Filament\Widgets\AttendanceSearch;
+use Filament\FontProviders\LocalFontProvider;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\UserMenuItem;
 use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -34,10 +36,19 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+
+        ->font(
+                'Inter',
+                url: asset('css/fonts.css'),
+                provider: LocalFontProvider::class,
+            )
             ->colors([
                 'primary' => Color::Amber,
             ])
             ->brandLogo(asset('img/logo.png'))
+            ->darkMode(false)
+            ->collapsedSidebarWidth('64px')
+            ->sidebarCollapsibleOnDesktop()
             ->brandLogoHeight('3rem') // Adjust this value as needed
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
@@ -72,7 +83,6 @@ class AdminPanelProvider extends PanelProvider
                     ->setNavigationGroup('Group Profile')
                     ->setIcon('heroicon-o-user')
                     ->setSort(10)
-                    ->canAccess(fn () => auth()->user()->id === 1)
                     ->shouldRegisterNavigation(true)
                     ->shouldShowEmailForm()
                     ->shouldShowDeleteAccountForm(false)

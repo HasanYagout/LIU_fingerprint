@@ -58,7 +58,7 @@ class AttendanceLog extends Model
                 config('services.api.password')
             )
                 ->timeout(10)
-                ->post('http://192.168.8.118:2000/api/v1/attendance-logs', $payload);
+                ->post('http://170.170.17.6:2001/api/v1/attendance-logs', $payload);
 
             if ($response->successful()) {
                 $data = $response->json();

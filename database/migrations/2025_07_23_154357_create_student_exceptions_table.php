@@ -13,22 +13,21 @@ return new class extends Migration
     {
         Schema::create('student_exceptions', function (Blueprint $table) {
             $table->id();
-            $table->string('student_id');
+            $table->unsignedBigInteger('student_id'); // Changed from string to match students table
             $table->unsignedBigInteger('semester_id');
             $table->date('from_date');
             $table->date('to_date');
             $table->text('reason')->nullable();
             $table->timestamps();
-
+        
             $table->foreign('student_id')
                 ->references('student_id')
-                ->on('students')
-                ->onDelete('cascade');
-
+                ->on('students');
+        
             $table->foreign('semester_id')
                 ->references('id')
                 ->on('semesters')
-                ->onDelete('cascade');
+                ;
         });
     }
 

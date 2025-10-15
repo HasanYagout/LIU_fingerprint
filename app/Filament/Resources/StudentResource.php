@@ -20,6 +20,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -30,7 +31,10 @@ class StudentResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-user-group';
     protected static ?string $navigationLabel = 'Students';
     protected static ?string $navigationGroup = 'Students';
-
+    public static function canAccess(): bool
+    {
+        return auth()->user() && !auth()->user()->hasRole('manager');
+    }
     public static function form(Forms\Form $form): Forms\Form
     {
         return $form
@@ -152,9 +156,11 @@ class StudentResource extends Resource
                         'semesters.name as semester_name',
                         'semesters.year as year',
                         'semesters.id as semester_id',
-                        'semester_student.percentage as pivot_percentage'
+                        'semester_student.percentage as pivot_percentage',
+
                     ])
-                    ->distinct('students.id')
+                    ->distinct('students.id'),
+
             )
             ->columns([
                 TextColumn::make('student_id')
@@ -192,17 +198,17 @@ class StudentResource extends Resource
                     })
                     ->sortable(),
 
-                TextColumn::make('paid_pct')
+                TextColumn::make('pivot_percentage')
                     ->label('Paid %')
                     ->getStateUsing(fn($record) => Helpers::getPaymentStatus(
                         $record->student_id,
                         $record->semester_id
                     )['percentage'])
+                    ->sortable('pivot_percentage')
                     ->color(fn($record) => Helpers::getPaymentStatus(
                         $record->student_id,
                         $record->semester_id
                     )['color'])
-                    ->sortable()
                     ->description(fn($record) => 'Required: ' .
                         Helpers::getPaymentStatus(
                             $record->student_id,
