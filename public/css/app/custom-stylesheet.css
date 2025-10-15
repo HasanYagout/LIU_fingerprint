@@ -16,3 +16,10 @@
 .fi-ta-pagination-item-active {
     @apply bg-primary-500 border-primary-500 text-white hover:bg-primary-600;
 }
+.fi-ta-actions-header-cell{
+    background-color: rgb(217, 119, 6);
+}
+.fi-ta-header-cell-sort-icon{
+    color: white !important;
+}
+

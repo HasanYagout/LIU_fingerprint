@@ -9,6 +9,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Pages\Page;
+use Filament\Support\Enums\MaxWidth;
 use Filament\Tables;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
@@ -23,7 +24,10 @@ class AttendanceLogSearch extends Page implements HasForms, HasTable
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
     protected static string $view = 'filament.pages.attendance-log-search';
     protected static ?string $navigationLabel = 'Attendance';
-
+    public function getMaxContentWidth(): MaxWidth|string|null
+    {
+        return 'full';
+    }
     public $date;
     public $studentId;
     public $loading = false;
@@ -74,15 +78,13 @@ class AttendanceLogSearch extends Page implements HasForms, HasTable
                 ->formatStateUsing(function ($state) {
                     return match($state) {
                         0 => 'Success',
-                        3 => 'Failed',
-                        default => $state,
+                        default => 'no permission',
                     };
                 })
                 ->badge()
                 ->color(fn (string $state): string => match ($state) {
                     '0' => 'success',
-                    '3' => 'danger',
-                    default => 'gray',
+                    default => 'danger',
                 }),
         ];
     }
@@ -121,6 +123,7 @@ class AttendanceLogSearch extends Page implements HasForms, HasTable
             ]
         );
     }
+
 
     protected function getTableRecordsPerPageSelectOptions(): array
     {

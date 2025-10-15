@@ -61,7 +61,7 @@ class AttendanceLog extends Model
             )
                 ->timeout(10)
                 ->post('http://192.168.1.62:2000/api/v1/attendance-logs', $payload);
-            dd($response->json());
+
             if ($response->successful()) {
 
 

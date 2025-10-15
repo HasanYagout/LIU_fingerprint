@@ -37,6 +37,7 @@ class AdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Amber,
             ])
+            ->darkMode(false)
             ->brandLogo(asset('img/logo.png'))
             ->brandLogoHeight('3rem') // Adjust this value as needed
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
