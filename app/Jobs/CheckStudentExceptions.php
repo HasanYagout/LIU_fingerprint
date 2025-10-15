@@ -9,6 +9,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
 
 class CheckStudentExceptions implements ShouldQueue
@@ -20,7 +21,6 @@ class CheckStudentExceptions implements ShouldQueue
         $today = Carbon::today()->toDateString();
         $toUnblacklist = [];
         $toBlacklist = [];
-
         Log::info("Starting daily student status update job", ['date' => $today]);
 
         // Get all active exceptions (students to unblacklist)
