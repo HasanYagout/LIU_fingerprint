@@ -9,12 +9,13 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Pages\Page;
-use Filament\Support\Enums\MaxWidth;
 use Filament\Tables;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Filament\Support\Enums\MaxWidth;
+
 
 class AttendanceLogSearch extends Page implements HasForms, HasTable
 {
@@ -24,19 +25,21 @@ class AttendanceLogSearch extends Page implements HasForms, HasTable
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
     protected static string $view = 'filament.pages.attendance-log-search';
     protected static ?string $navigationLabel = 'Attendance';
-    public function getMaxContentWidth(): MaxWidth|string|null
-    {
-        return 'full';
-    }
+
     public $date;
     public $studentId;
     public $loading = false;
     public $error = null;
-    public static function canAccess(): bool
+
+    public function getMaxContentWidth(): MaxWidth|string|null
     {
-      return  auth()->user() &&  !auth()->user()->hasRole('manager');
+        return 'full';
     }
 
+    // public static function canAccess(): bool
+    // {
+    //   return  auth()->user() &&  auth()->user()->hasPermissionTo('page_AttendanceLogSearch');
+    // }
     protected function getFormSchema(): array
     {
         return [
@@ -48,6 +51,7 @@ class AttendanceLogSearch extends Page implements HasForms, HasTable
                 ->numeric(),
         ];
     }
+
 
     protected function getTableColumns(): array
     {
@@ -64,28 +68,24 @@ class AttendanceLogSearch extends Page implements HasForms, HasTable
             Tables\Columns\TextColumn::make('C_Unique')
                 ->label('Student ID')
                 ->searchable(),
-            Tables\Columns\TextColumn::make('L_Mode')
+                Tables\Columns\TextColumn::make('L_Result')
                 ->label('Mode')
                 ->formatStateUsing(function ($state) {
                     return match($state) {
-                        1 => 'Entry',
-                        3 => 'Exit',
-                        default => $state,
-                    };
-                }),
-            Tables\Columns\TextColumn::make('L_Result')
-                ->label('Result')
-                ->formatStateUsing(function ($state) {
-                    return match($state) {
-                        0 => 'Success',
-                        default => 'no permission',
+                        0 => 'Entry',
+                        default => 'No Permission',
                     };
                 })
                 ->badge()
-                ->color(fn (string $state): string => match ($state) {
-                    '0' => 'success',
-                    default => 'danger',
+                ->color(function ($state) {
+                    return match($state) {
+                        0 => 'success',  // Green for Entry
+                        default => 'danger', // Gray for No Permission
+                    };
                 }),
+            Tables\Columns\TextColumn::make('L_TID')
+                ->label('Terminal')
+,
         ];
     }
 
@@ -124,11 +124,16 @@ class AttendanceLogSearch extends Page implements HasForms, HasTable
         );
     }
 
+    protected function getTablePaginationView(): string
+{
+    return view('filament.pages.summary');
+}
 
     protected function getTableRecordsPerPageSelectOptions(): array
     {
         // Use the API's page size as the maximum
         $apiPageSize = AttendanceLog::$apiPageSize ?? 100;
+
 
         // Standard options that are <= API's max size
         $options = [10, 25, 50];
@@ -172,7 +177,15 @@ class AttendanceLogSearch extends Page implements HasForms, HasTable
         $this->loading = false;
     }
 
+    protected function getTablePaginationEnabled(): bool
+    {
+        return true;
+    }
 
+    protected function getTablePaginationSummaryEnabled(): bool
+    {
+        return true;
+    }
 
 
 }

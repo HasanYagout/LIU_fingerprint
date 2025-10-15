@@ -14,6 +14,7 @@
         "joaopaulolndev/filament-edit-profile": "^1.0",
         "laravel/framework": "^12.0",
         "laravel/sanctum": "^4.0",
+        "laravel/telescope": "^5.14",
         "laravel/tinker": "^2.10.1",
         "maatwebsite/excel": "^3.1",
         "opcodesio/log-viewer": "^3.19",

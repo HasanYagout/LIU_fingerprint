@@ -10,81 +10,81 @@ use Carbon\Carbon;
 
 class StudentBarChart extends ChartWidget
 {
-    use InteractsWithPageFilters;
+     use InteractsWithPageFilters;
 
-    protected static ?string $heading = 'Monthly Student Entries';
+     protected static ?string $heading = 'Monthly Student Entries';
+     protected static bool $isLazy = true;
 
-    protected static ?int $sort=3;
-    /**
-     * This widget is only visible to users with the 'Manager' role.
-     */
-    public static function canView(): bool
-    {
-        return auth()->user() && !auth()->user()->hasRole('Accountant');
-    }
+     protected static ?int $sort=3;
+     /**
+      * This widget is only visible to users with the 'Manager' role.
+      */
+     public static function canView(): bool
+     {
+         return auth()->user() && !auth()->user()->hasRole('Accountant');
+     }
 
 
-    protected function getData(): array
-    {
-        $filters = $this->filters;
+     protected function getData(): array
+     {
+         $filters = $this->filters;
 
-        $startDate = $filters['startDate'] ?? now()->startOfMonth()->format('Y-m-d');
-        $endDate = $filters['endDate'] ?? now()->endOfMonth()->format('Y-m-d');
-        $start = \Illuminate\Support\Carbon::parse($startDate)->startOfDay();
-        $end = Carbon::parse($endDate)->endOfDay();
+         $startDate = $filters['startDate'] ?? now()->startOfMonth()->format('Y-m-d');
+         $endDate = $filters['endDate'] ?? now()->endOfMonth()->format('Y-m-d');
+         $start = Carbon::parse($startDate)->startOfDay();
+         $end = Carbon::parse($endDate)->endOfDay();
 
-        // Fetch all data from the Sushi model.
-        $stats = AttendanceStat::query()
-            ->whereBetween('date', [$start, $end])
-            ->get();
+         // Fetch all data from the Sushi model.
+         AttendanceStat::setDateRange($start->format('Ymd'), $end->format('Ymd'));
+         $stats = AttendanceStat::all();
 
-        // Group the statistics by month and year.
-        $monthlyStats = $stats->groupBy(function ($stat) {
-            return Carbon::parse($stat->date)->format('Y-m');
-        });
+         // Group the statistics by month and year.
+         $monthlyStats = $stats->groupBy(function ($stat) {
+             return Carbon::parse($stat->date)->format('Y-m');
+         });
 
-        $labels = [];
-        $totalEnteredData = [];
-        $unpaidUsersData = [];
+         $labels = [];
+         $totalEnteredData = [];
+         $unpaidUsersData = [];
 
-        // Process each month's aggregated data.
-        foreach ($monthlyStats as $month => $data) {
-            // Format the month for the chart label (e.g., "Jul 2025").
-            $labels[] = Carbon::createFromFormat('Y-m', $month)->format('M Y');
+         // Process each month's aggregated data.
+         foreach ($monthlyStats as $month => $data) {
+             // Format the month for the chart label (e.g., "Jul 2025").
+             $labels[] = Carbon::createFromFormat('Y-m', $month)->format('M Y');
 
-            // Sum the total entered users for the month.
-            $totalEnteredData[] = $data->sum('unique_entered_users');
+             // Sum the total entered users for the month.
+             $totalEnteredData[] = $data->sum('unique_entered_users');
 
-            // Sum the total unpaid users for the month.
-            $unpaidUsersData[] = $data->sum('unique_not_paid_users');
-        }
+             // Sum the total unpaid users for the month.
+             $unpaidUsersData[] = $data->sum('unique_not_paid_users');
+         }
 
-        return [
-            'datasets' => [
-                [
-                    'label' => 'Total Entered Users',
-                    'data' => $totalEnteredData,
-                    'borderColor' => 'hsl(208, 88%, 45%)',       // Vivid blue border
-                    'backgroundColor' => 'hsl(208, 88%, 85%)',    // Soft blue fill
-                    'fill' => true,                               // Fill under line (if line chart)
-                    'borderWidth' => 2,
-                ],
-                [
-                    'label' => 'Unpaid Users',
-                    'data' => $unpaidUsersData,
-                    'borderColor' => 'hsl(348, 83%, 45%)',        // Vivid red border
-                    'backgroundColor' => 'hsl(348, 83%, 85%)',     // Soft red fill
-                    'fill' => true,
-                    'borderWidth' => 2,
-                ],
-            ],
-            'labels' => $labels,
-        ];
+         return [
+             'datasets' => [
+                 [
+                     'label' => 'Total Entered Users',
+                     'data' => $totalEnteredData,
+                     'borderColor' => 'hsl(208, 88%, 45%)',       // Vivid blue border
+                     'backgroundColor' => 'hsl(208, 88%, 85%)',    // Soft blue fill
+                     'fill' => true,                               // Fill under line (if line chart)
+                     'borderWidth' => 2,
+                 ],
+                 [
+                     'label' => 'Unpaid Users',
+                     'data' => $unpaidUsersData,
+                     'borderColor' => 'hsl(348, 83%, 45%)',        // Vivid red border
+                     'backgroundColor' => 'hsl(348, 83%, 85%)',     // Soft red fill
+                     'fill' => true,
+                     'borderWidth' => 2,
+                 ],
+             ],
+             'labels' => $labels,
+         ];
 
-    }
+     }
 
-    protected function getType(): string
-    {
-        return 'bar'; // Using a line chart to show trends over time.
-    }
+     protected function getType(): string
+     {
+         return 'bar'; // Using a line chart to show trends over time.
+     }
 }

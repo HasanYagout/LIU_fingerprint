@@ -8,10 +8,16 @@ return new class extends Migration {
     {
         Schema::create('semester_student', function (Blueprint $table) {
             $table->foreignId('semester_id')->constrained();
-            $table->foreignId('student_id')->constrained('students','student_id'); // Explicit if table/key names differ
+            
+            // Explicitly define to match students.student_id type
+            $table->unsignedBigInteger('student_id');
+            $table->foreign('student_id')
+                  ->references('student_id')
+                  ->on('students');
+            
             $table->integer('percentage');
             $table->timestamps();
-            $table->primary(['semester_id', 'student_id']); // Composite primary key
+            $table->primary(['semester_id', 'student_id']);
         });
     }
 

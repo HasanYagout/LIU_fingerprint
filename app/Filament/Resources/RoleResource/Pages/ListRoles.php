@@ -10,6 +10,7 @@ use Filament\Support\Enums\MaxWidth;
 class ListRoles extends ListRecords
 {
     protected static string $resource = RoleResource::class;
+
     public function getMaxContentWidth(): MaxWidth|string|null
     {
         return 'full';

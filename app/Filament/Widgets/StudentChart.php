@@ -13,6 +13,7 @@ class StudentChart extends ChartWidget
 {
     use InteractsWithPageFilters;
     protected static ?string $heading = 'Student Entry Status';
+    protected static bool $isLazy = true;
 
     protected static ?int $sort=4;
     /**
@@ -59,12 +60,11 @@ class StudentChart extends ChartWidget
 
         $startDate = $filters['startDate'] ?? now()->startOfMonth()->format('Y-m-d');
         $endDate = $filters['endDate'] ?? now()->endOfMonth()->format('Y-m-d');
-        $start = \Illuminate\Support\Carbon::parse($startDate)->startOfDay();
+        $start = Carbon::parse($startDate)->startOfDay();
         $end = Carbon::parse($endDate)->endOfDay();
 
-        $stats = AttendanceStat::query()
-            ->whereBetween('date', [$start, $end])
-            ->get();
+        AttendanceStat::setDateRange($start->format('Ymd'), $end->format('Ymd'));
+        $stats = AttendanceStat::all();
         $totalUnpaidUsers = $stats->sum('unique_not_paid_users');
         $totalEnteredUsers = $stats->sum('unique_entered_users');
 

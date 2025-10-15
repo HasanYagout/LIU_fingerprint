@@ -26,5 +26,12 @@ class Student extends Model
             ->withPivot('percentage')
             ->withTimestamps();
     }
+    protected static function booted()
+    {
+        static::deleting(function ($student) {
+            $student->exceptions()->delete();
+            $student->semesters()->detach(); // remove pivot table links
+        });
+    }
 
 }
