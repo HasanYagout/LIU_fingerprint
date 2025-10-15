@@ -36,10 +36,10 @@ class AttendanceLogSearch extends Page implements HasForms, HasTable
         return 'full';
     }
 
-    // public static function canAccess(): bool
-    // {
-    //   return  auth()->user() &&  auth()->user()->hasPermissionTo('page_AttendanceLogSearch');
-    // }
+    public static function canAccess(): bool
+    {
+        return  auth()->user() &&  auth()->user()->hasPermissionTo('page_AttendanceLogSearch');
+    }
     protected function getFormSchema(): array
     {
         return [
@@ -68,7 +68,7 @@ class AttendanceLogSearch extends Page implements HasForms, HasTable
             Tables\Columns\TextColumn::make('C_Unique')
                 ->label('Student ID')
                 ->searchable(),
-                Tables\Columns\TextColumn::make('L_Result')
+            Tables\Columns\TextColumn::make('L_Result')
                 ->label('Mode')
                 ->formatStateUsing(function ($state) {
                     return match($state) {
@@ -85,12 +85,13 @@ class AttendanceLogSearch extends Page implements HasForms, HasTable
                 }),
             Tables\Columns\TextColumn::make('L_TID')
                 ->label('Terminal')
-,
+            ,
         ];
     }
 
     protected function getTableQuery(): Builder
     {
+
         return AttendanceLog::query(); // Dummy query to satisfy Filament
     }
 
@@ -110,6 +111,11 @@ class AttendanceLogSearch extends Page implements HasForms, HasTable
         // Clear cached data and fetch fresh results
         AttendanceLog::clearBootedModels();
         $items = AttendanceLog::all();
+        // Sort the items by C_Date and C_Time in descending order
+        $items = $items->sortByDesc(function ($item) {
+            return $item->C_Date . $item->C_Time;
+        })->values();
+
         $total = AttendanceLog::$totalRecords;
 
         return new LengthAwarePaginator(
@@ -125,9 +131,9 @@ class AttendanceLogSearch extends Page implements HasForms, HasTable
     }
 
     protected function getTablePaginationView(): string
-{
-    return view('filament.pages.summary');
-}
+    {
+        return view('filament.pages.summary');
+    }
 
     protected function getTableRecordsPerPageSelectOptions(): array
     {
