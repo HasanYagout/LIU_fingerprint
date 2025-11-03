@@ -37,10 +37,10 @@ class UserResource extends Resource
         ];
     }
 
-    public static function canAccess(): bool
-    {
-        return auth()->user()->hasPermissionTo('view_user');
-    }
+//    public static function canAccess(): bool
+//    {
+//        return auth()->user()->hasPermissionTo('view_user');
+//    }
 
     public static function getPages(): array
     {

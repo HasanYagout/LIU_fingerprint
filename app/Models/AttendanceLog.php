@@ -6,12 +6,10 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
-use Sushi\Sushi;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class AttendanceLog extends Model
 {
-//    use Sushi;
-
     protected $schema = [
         'C_Date'   => 'string',
         'C_Time'   => 'string',
@@ -24,9 +22,12 @@ class AttendanceLog extends Model
     protected static $date;
     protected static $studentId;
     protected static $currentPage = 1;
-    protected static $itemsPerPage = 10;
+    public static $itemsPerPage = 100;
     public static $totalRecords = 0;
 
+    /**
+     * Set search parameters for API request.
+     */
     public static function setSearchParameters($date, $studentId = null, $page = 1, $perPage = 10)
     {
         static::$date = $date;
@@ -36,15 +37,20 @@ class AttendanceLog extends Model
         static::clearBootedModels();
     }
 
-    public function getRows(): array
+    /**
+     * Fetch rows from API and return paginated result.
+     */
+    public function getRowsPaginated(): LengthAwarePaginator
     {
         if (!static::$date) {
-            return [];
+            return new LengthAwarePaginator([], 0, static::$itemsPerPage, static::$currentPage);
         }
 
         try {
             $payload = [
-                'date' => Carbon::parse(static::$date)->format('Ymd'),
+                'date' => is_array(static::$date)
+                    ? Carbon::parse(static::$date['date'] ?? now())->format('Ymd')
+                    : Carbon::parse(static::$date)->format('Ymd'),
                 'page' => static::$currentPage,
                 'pageSize' => static::$itemsPerPage,
             ];
@@ -57,13 +63,23 @@ class AttendanceLog extends Model
                 config('services.api.username'),
                 config('services.api.password')
             )
-                ->timeout(10)
-                ->post('http://127.0.0.1:8000/api/local-data', $payload);
-            dd($response->json());
+                ->get('http://127.0.0.1:8001/api/local-data', $payload);
+
             if ($response->successful()) {
                 $data = $response->json();
-                static::$totalRecords = $data['pagination']['totalRecords'] ?? count($data['logs'] ?? []);
-                return $data['logs'] ?? [];
+                $items = $data['logs'] ?? [];
+                static::$totalRecords = $data['pagination']['totalRecords'] ?? count($items);
+
+                return new LengthAwarePaginator(
+                    $items,
+                    static::$totalRecords,
+                    static::$itemsPerPage,
+                    static::$currentPage,
+                    [
+                        'path' => request()->url(),
+                        'query' => request()->query(),
+                    ]
+                );
             }
 
             Log::error('Attendance logs API request failed', [
@@ -77,15 +93,21 @@ class AttendanceLog extends Model
             ]);
         }
 
-        return [];
+        return new LengthAwarePaginator([], 0, static::$itemsPerPage, static::$currentPage);
     }
 
-    public function getPerPage()
+    /**
+     * Get current items per page.
+     */
+    public function getPerPage(): int
     {
         return static::$itemsPerPage;
     }
 
-    protected function sushiShouldCache()
+    /**
+     * Disable Sushi caching (if used).
+     */
+    protected function sushiShouldCache(): bool
     {
         return false;
     }
