@@ -37,6 +37,7 @@ class UserForm
                         MultiSelect::make('roles')
                             ->label('Roles')
                             ->options(\Spatie\Permission\Models\Role::all()->pluck('name', 'id'))
+                            ->preload()
                             ->relationship('roles', 'name'),
                     ]),
             ]);

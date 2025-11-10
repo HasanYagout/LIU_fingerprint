@@ -19,17 +19,44 @@
 
         {{ $this->table }}
 
-        @if ($this->getTableRecords()->count())
+        @php
+            $paginationInfo = $this->getPaginationInfo();
+        @endphp
+
+        @if ($paginationInfo['total'] > 0)
             <div class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
                 Showing
-                <span class="font-medium">{{ $this->getTableRecords()->firstItem() }}</span>
+                <span class="font-medium">{{ $paginationInfo['from'] ?? 0 }}</span>
                 to
-                <span class="font-medium">{{ $this->getTableRecords()->lastItem() }}</span>
+                <span class="font-medium">{{ $paginationInfo['to'] ?? 0 }}</span>
                 of
-                <span class="font-medium">{{ $this->getTableRecords()->total() }}</span>
+                <span class="font-medium">{{ $paginationInfo['total'] ?? 0 }}</span>
                 records
+            </div>
+        @else
+            <div class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 text-center">
+                No records found.
             </div>
         @endif
     </div>
-{{--    {{ $this->table }}--}}
+
+    <script>
+        // Auto-refresh when typing (optional)
+        document.addEventListener('livewire:load', function () {
+            let studentIdTimeout;
+
+            Livewire.hook('element.updated', (el, component) => {
+                if (el.getAttribute('wire:model') === 'student_id') {
+                    clearTimeout(studentIdTimeout);
+                    studentIdTimeout = setTimeout(() => {
+                        @this.search();
+                    }, 800); // Wait 800ms after typing stops
+                }
+
+                if (el.getAttribute('wire:model') === 'date') {
+                    @this.search();
+                }
+            });
+        });
+    </script>
 </x-filament-panels::page>

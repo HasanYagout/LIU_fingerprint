@@ -40,15 +40,15 @@ class AttendanceStat extends Model
         try {
             $response = Http::withBasicAuth(config('services.api.username'), config('services.api.password'))
                 ->timeout(10)
-                ->post('http://170.170.17.6:2001/api/v1/attendance-stats', [
+                ->post('http://127.0.0.1:8001/api/stat', [
                     'startDate' => $startFormatted,
                     'endDate' => $endFormatted,
                 ]);
-
             if ($response->successful() && $response->json('success')) {
                 $stats = $response->json('dailyStats') ?? [];
                 return collect($stats)->map(function ($stat) {
                     $date = Carbon::createFromFormat('Ymd', $stat['date'])->toDateString();
+
 
                     return [
                         'id' => $stat['date'],

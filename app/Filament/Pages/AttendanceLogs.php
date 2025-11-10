@@ -13,7 +13,6 @@ use Filament\Tables;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Illuminate\Support\Collection;
-use Illuminate\Pagination\LengthAwarePaginator;
 
 class AttendanceLogs extends Page implements HasTable, HasForms
 {
@@ -25,21 +24,42 @@ class AttendanceLogs extends Page implements HasTable, HasForms
     protected string $view = 'filament.pages.attendance-logs';
 
     public $loading = false;
+    public $date;
+    public $student_id;
+
+    public function mount(): void
+    {
+        $this->date = request('date')
+            ? Carbon::parse(request('date'))->format('Y-m-d')
+            : now()->format('Y-m-d');
+
+        // also set form value so the DatePicker shows it
+        $this->form->fill([
+            'date' => $this->date,
+            'student_id' => $this->student_id,
+        ]);
+    }
 
     protected function getFormSchema(): array
     {
         return [
-            DatePicker::make('date')->default(now()),
-            TextInput::make('studentId')->label('Student ID')->numeric(),
+            DatePicker::make('date')
+                ->default(now())
+                ->reactive()
+                ->afterStateUpdated(function ($state) {
+                    $this->date = $state;
+                    $this->resetPage(); // Reset to first page when filters change
+                }),
+            TextInput::make('student_id')
+                ->label('Student ID')
+                ->numeric()
+                ->reactive()
+                ->placeholder('Enter student ID')
+                ->afterStateUpdated(function ($state) {
+                    $this->student_id = $state;
+                    $this->resetPage(); // Reset to first page when filters change
+                }),
         ];
-    }
-
-    public function mount(): void
-    {
-        $this->form->fill([
-            'date' => request()->query('date', now()->format('Y-m-d')),
-            'studentId' => request()->query('studentId'),
-        ]);
     }
 
     protected function getTableColumns(): array
@@ -62,50 +82,92 @@ class AttendanceLogs extends Page implements HasTable, HasForms
         ];
     }
 
+
+
     // Return Collection of API logs
     public function getTableRecords(): Collection
     {
         $page = $this->getTablePage();
-        $perPage = AttendanceLog::$itemsPerPage;
+        $perPage = $this->getTableRecordsPerPage();
 
-        // Set search parameters in the model
+        // Use Livewire properties directly
+        $date = $this->date ?? now()->format('Y-m-d');
+        $studentId = $this->student_id ?? null;
+
+        // Debug: Log what we're sending to the API
+        \Log::info('Search Parameters:', [
+            'date' => $date,
+            'student_id' => $studentId,
+            'page' => $page,
+            'perPage' => $perPage
+        ]);
+
+        // Convert student_id to string if it's not empty
+        $studentId = !empty($studentId) ? (string)$studentId : null;
+
         AttendanceLog::setSearchParameters(
-            $this->form->getState('date'),
-            $this->form->getState('studentId'),
+            $date,
+            $studentId,
             $page,
             $perPage
         );
 
-        // Fetch rows via the model
-        $logs = (new AttendanceLog())->getRows();
-        $total = AttendanceLog::$totalRecords;
+        // Get the paginator from the model
+        $paginator = (new AttendanceLog())->getRowsPaginated();
 
-        // Wrap in LengthAwarePaginator
-        $paginator = new LengthAwarePaginator(
-            $logs,
-            $total,
-            $perPage,
-            $page,
-            ['path' => request()->url(), 'query' => request()->query()]
-        );
-
-        // Filament expects Collection, so return $paginator->items() as Collection
         return collect($paginator->items());
     }
 
     // Optional: Table unique key
     public function getTableRecordKey($record): string
     {
-        return $record['L_UID'];
+        return $record['L_UID'] . '_' . $record['C_Date'] . '_' . $record['C_Time'];
     }
 
     protected function getTablePaginationView(): string
     {
-        return view('filament.pages.summary'); // your custom pagination blade
+        return 'filament.pages.summary';
     }
 
     protected function getTableHeaderActions(): array
     {
         return [];
+    }
+
+    // Search method
+    public function search(): void
+    {
+        $this->loading = true;
+        $this->resetPage(); // Reset to first page when searching
+        $this->loading = false;
+    }
+
+    // Helper method to get pagination info for the view
+    public function getPaginationInfo(): array
+    {
+        $page = $this->getTablePage();
+        $perPage = $this->getTableRecordsPerPage();
+
+        // Use Livewire properties directly
+        $date = $this->date ?? now()->format('Y-m-d');
+        $studentId = $this->student_id ?? null;
+        $studentId = !empty($studentId) ? (string)$studentId : null;
+
+        AttendanceLog::setSearchParameters(
+            $date,
+            $studentId,
+            $page,
+            $perPage
+        );
+
+        $paginator = (new AttendanceLog())->getRowsPaginated();
+
+        return [
+            'total' => $paginator->total(),
+            'from' => $paginator->firstItem(),
+            'to' => $paginator->lastItem(),
+            'currentPage' => $paginator->currentPage(),
+            'lastPage' => $paginator->lastPage(),
+        ];
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Students\Tables;
 
 use App\Helpers\Helpers;
+use App\Models\Student;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -16,6 +17,22 @@ class StudentsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->query(
+                Student::query()
+                    ->with('semesters')
+                    ->join('semester_student', 'students.student_id', '=', 'semester_student.student_id')
+                    ->join('semesters', 'semester_student.semester_id', '=', 'semesters.id')
+                    ->where('semesters.status', 1) // Filter by active status directly
+                    ->select([
+                        'students.*',
+                        'semesters.name as semester_name',
+                        'semesters.id as semester_id',
+                        'semester_student.percentage as pivot_percentage',
+
+                    ])
+                    ->distinct('students.id'),
+
+            )
             ->columns([
                 TextColumn::make('student_id')
                     ->label('Student ID')
@@ -38,11 +55,7 @@ class StudentsTable
                     })
                     ->sortable(),
 
-                TextColumn::make('year')
-                    ->searchable(query: function (Builder $query, string $search) {
-                        $query->where('semesters.year', 'like', "%{$search}%");
-                    })
-                    ->sortable(),
+
 
 
                 TextColumn::make('major')

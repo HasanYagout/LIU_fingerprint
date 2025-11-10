@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Users\Tables;
 
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
@@ -35,10 +36,10 @@ class UsersTable
                     ->sortable(),
             ])
             ->filters([
-//                SelectFilter::make('roles')
-//                    ->relationship('roles', 'name')
-//                    ->multiple()
-//                    ->preload(),
+                SelectFilter::make('roles')
+                    ->relationship('roles', 'name')
+                    ->multiple()
+                    ->preload(),
             ])
             ->recordActions([
                 EditAction::make(),

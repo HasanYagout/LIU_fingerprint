@@ -10,3 +10,4 @@ Route::get('/user', function (Request $request) {
 
 
 Route::get('/local-data', [LocalApiController::class, 'index'])->middleware(\App\Http\Middleware\BasicAuth::class);
+Route::post('/stat', [LocalApiController::class, 'stat'])->middleware(\App\Http\Middleware\BasicAuth::class);
