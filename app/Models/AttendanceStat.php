@@ -40,11 +40,11 @@ class AttendanceStat extends Model
         try {
             $response = Http::withBasicAuth(config('services.api.username'), config('services.api.password'))
                 ->timeout(10)
-                ->post('http://192.168.1.102:2001/api/v1/attendance-stats', [
+                ->post('http://170.170.17.6:2001/api/v1/attendance-stats', [
                     'startDate' => $startFormatted,
                     'endDate' => $endFormatted,
                 ]);
-
+               
             if ($response->successful() && $response->json('success')) {
                 $stats = $response->json('dailyStats') ?? [];
                 return collect($stats)->map(function ($stat) {

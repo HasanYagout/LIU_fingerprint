@@ -22,7 +22,6 @@ class ExceptionsRelationManager extends RelationManager
     {
         return $form
             ->schema([
-
                 Select::make('semester_id')
                     ->label('Semester')
                     ->options(Semester::where('status', 1)->pluck('name', 'id'))
@@ -87,19 +86,18 @@ class ExceptionsRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('semester_id')
             ->columns([
-                Tables\Columns\TextColumn::make('student.name'),
-//                Tables\Columns\TextColumn::make('semester.name')
-//                    ->label('Semester'),
-//                Tables\Columns\TextColumn::make('semester.year')
-//                    ->label('Year'),
-//                Tables\Columns\TextColumn::make('from_date')
-//                    ->date(),
-//                Tables\Columns\TextColumn::make('to_date')
-//                    ->date(),
-//                Tables\Columns\TextColumn::make('reason')
-//                    ->limit(50),
-//                Tables\Columns\TextColumn::make('created_at')
-//                    ->dateTime(),
+                Tables\Columns\TextColumn::make('semester.name')
+                    ->label('Semester'),
+                Tables\Columns\TextColumn::make('semester.year')
+                    ->label('Year'),
+                Tables\Columns\TextColumn::make('from_date')
+                    ->date(),
+                Tables\Columns\TextColumn::make('to_date')
+                    ->date(),
+                Tables\Columns\TextColumn::make('reason')
+                    ->limit(50),
+                Tables\Columns\TextColumn::make('created_at')
+                    ->dateTime(),
             ])
             ->filters([
                 //

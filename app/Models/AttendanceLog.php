@@ -20,7 +20,7 @@ class AttendanceLog extends Model
         'L_Mode'   => 'integer',
         'L_Result' => 'integer',
     ];
-
+    
     protected static $date;
     protected static $studentId;
     protected static $currentPage = 1;
@@ -29,7 +29,7 @@ class AttendanceLog extends Model
 
     public static function setSearchParameters($date, $studentId = null, $page = 1, $perPage = 100)
     {
-
+        
         static::$date = $date;
         static::$studentId = $studentId;
         static::$currentPage = $page;
@@ -49,7 +49,7 @@ class AttendanceLog extends Model
                 'page' => static::$currentPage,
                 'pageSize' => static::$itemsPerPage,
             ];
-
+           
             if (!empty(static::$studentId)) {
                 $payload['uniqueId'] = static::$studentId;
             }
@@ -59,11 +59,11 @@ class AttendanceLog extends Model
                 config('services.api.password')
             )
                 ->timeout(10)
-                ->post('http://192.168.1.102:2001/api/v1/attendance-logs', $payload);
-
+                ->post('http://170.170.17.6:2001/api/v1/attendance-logs', $payload);
+                   
             if ($response->successful()) {
                 $data = $response->json();
-
+                
                 static::$totalRecords = $data['pagination']['totalRecords'] ?? count($data['logs'] ?? []);
                 return $data['logs'] ?? [];
             }

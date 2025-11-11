@@ -36,10 +36,10 @@ class AttendanceLogSearch extends Page implements HasForms, HasTable
         return 'full';
     }
 
-//    public static function canAccess(): bool
-//    {
-//      return  auth()->user() &&  auth()->user()->hasPermissionTo('page_AttendanceLogSearch');
-//    }
+    public static function canAccess(): bool
+    {
+      return  auth()->user() &&  auth()->user()->hasPermissionTo('page_AttendanceLogSearch');
+    }
     protected function getFormSchema(): array
     {
         return [
@@ -91,7 +91,7 @@ class AttendanceLogSearch extends Page implements HasForms, HasTable
 
     protected function getTableQuery(): Builder
     {
-
+           
         return AttendanceLog::query(); // Dummy query to satisfy Filament
     }
 

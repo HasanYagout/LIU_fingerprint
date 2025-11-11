@@ -357,7 +357,7 @@ class StudentResource extends Resource
     {
         return [
             RelationManagers\SemestersRelationManager::class,
-//            RelationManagers\ExceptionsRelationManager::class,
+            RelationManagers\ExceptionsRelationManager::class,
 
         ];
     }

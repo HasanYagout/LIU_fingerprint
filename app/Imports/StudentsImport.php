@@ -9,8 +9,6 @@ use App\Jobs\UnblacklistJob;
 use App\Models\Semester;
 use App\Models\Student;
 use Maatwebsite\Excel\Concerns\ToModel;
-use Maatwebsite\Excel\Concerns\WithBatchInserts;
-use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\AfterImport;
@@ -18,7 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
-class StudentsImport implements ToModel, WithHeadingRow, WithEvents,WithChunkReading, WithBatchInserts
+class StudentsImport implements ToModel, WithHeadingRow, WithEvents
 {
     protected int $semesterId;
     protected string $apiUsername;
@@ -128,15 +126,5 @@ class StudentsImport implements ToModel, WithHeadingRow, WithEvents,WithChunkRea
                 RestartJob::dispatch($this->apiUsername, $this->apiPassword);
             },
         ];
-    }
-
-    public function chunkSize(): int
-    {
-        return 500; // process 500 rows at a time
-    }
-
-    public function batchSize(): int
-    {
-        return 500;
     }
 }
