@@ -86,6 +86,7 @@ class ExceptionsRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('semester_id')
             ->columns([
+                Tables\Columns\TextColumn::make('student.name'),
                 Tables\Columns\TextColumn::make('semester.name')
                     ->label('Semester'),
                 Tables\Columns\TextColumn::make('semester.year')
@@ -103,7 +104,13 @@ class ExceptionsRelationManager extends RelationManager
                 //
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make(),
+                Tables\Actions\CreateAction::make()
+                    ->mutateFormDataUsing(function (array $data): array {
+
+                        $data['created_by'] = auth()->id();
+
+                        return $data;
+                    }),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

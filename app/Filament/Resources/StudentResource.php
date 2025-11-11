@@ -31,6 +31,7 @@ class StudentResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-user-group';
     protected static ?string $navigationLabel = 'Students';
     protected static ?string $navigationGroup = 'Students';
+
     public static function canAccess(): bool
     {
         return auth()->user() && !auth()->user()->hasRole('manager');
@@ -159,7 +160,7 @@ class StudentResource extends Resource
                         'semester_student.percentage as pivot_percentage',
 
                     ])
-                    ->distinct('students.id'),
+                    ->distinct('students.student_id'),
 
             )
             ->columns([
@@ -247,14 +248,14 @@ class StudentResource extends Resource
                                                     $semester->id
                                                 );
                                                 if ($paymentStatus['percentage'] < $paymentStatus['required']) {
-                                                    $unpaidStudentIds[] = $student->id;
+                                                    $unpaidStudentIds[] = $student->student_id;
                                                     break; // Student is unpaid in at least one semester
                                                 }
                                             }
                                         }
 
                                         // Apply filter to only show unpaid students
-                                        $subQuery->whereIn('students.id', $unpaidStudentIds);
+                                        $subQuery->whereIn('students.student_id', $unpaidStudentIds);
                                     });
                                 });
                             });
@@ -282,11 +283,11 @@ class StudentResource extends Resource
                                                     }
                                                 }
                                                 if ($allPaid) {
-                                                    $paidStudentIds[] = $student->id;
+                                                    $paidStudentIds[] = $student->student_id;
                                                 }
                                             }
 
-                                            $subQuery->whereIn('students.id', $paidStudentIds);
+                                            $subQuery->whereIn('students.student_id', $paidStudentIds);
                                         });
                                 });
                             });

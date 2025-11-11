@@ -1,4 +1,5 @@
 <?php
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -10,11 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('students', function (Blueprint $table) {
-            $table->bigInteger('student_id')->primary(); // define column and make primary key
-            $table->string('name');
-            $table->string('major')->nullable();
-            $table->timestamps();
+        Schema::table('student_exceptions', function (Blueprint $table) {
+            $table->integer('created_by')->default(0);
         });
     }
 
@@ -23,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('students');
+        Schema::table('student_exception', function (Blueprint $table) {
+            //
+        });
     }
 };

@@ -56,4 +56,6 @@ class User extends Authenticatable implements HasAvatar
             'password' => 'hashed',
         ];
     }
+
+
 }
