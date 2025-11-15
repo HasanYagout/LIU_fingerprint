@@ -2,6 +2,8 @@
 
 namespace App\Providers\Filament;
 
+use BezhanSalleh\FilamentShield\FilamentShield;
+use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\FontProviders\LocalFontProvider;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -32,6 +34,12 @@ class AdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Amber,
             ])
+            ->profile()
+            ->viteTheme('resources/css/filament/admin/theme.css')
+            ->brandLogo(asset('img/logo.png'))
+            ->brandLogoHeight('3rem') // Adjust this value as needed
+            ->darkMode(false)
+            ->spa()
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
@@ -49,6 +57,9 @@ class AdminPanelProvider extends PanelProvider
             )
             ->collapsedSidebarWidth('64px')
             ->sidebarCollapsibleOnDesktop()
+            ->plugins([
+                FilamentShieldPlugin::make(),
+            ])
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

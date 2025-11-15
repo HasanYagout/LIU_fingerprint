@@ -35,7 +35,7 @@ class StudentForm
                         Semester::where('status', 1)
                             ->get()
                             ->mapWithKeys(function ($semester) {
-                                return [$semester->id => $semester->name . ' - ' . $semester->year];
+                                return [$semester->id => $semester->name];
                             })
                     )
                     ->preload()

@@ -13,12 +13,43 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use App\Models\Semester;
+use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Database\Eloquent\Model;
 
 class SemesterResource extends Resource
 {
     protected static ?string $model = Semester::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+
+   public static function getGloballySearchableAttributes(): array
+   {
+       return ['name'];
+   }
+
+    public static function getGlobalSearchResultTitle(Model $record): string | Htmlable
+    {
+
+        return $record->name;
+    }
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        return [
+            'Name'=>$record->name,
+        ];
+    }
+
+    public static function getGlobalSearchResultUrl(Model $record): ?string
+    {
+        return static::getUrl('edit', ['record' => $record]);
+    }
+
+    public static function canAccess(): bool
+    {
+
+        return auth()->user() && auth()->user()->hasPermissionTo('View:Semester');
+
+    }
 
     public static function form(Schema $schema): Schema
     {

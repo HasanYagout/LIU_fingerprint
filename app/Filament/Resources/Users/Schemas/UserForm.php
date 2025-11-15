@@ -26,6 +26,7 @@ class UserForm
                             ->maxLength(255),
                         TextInput::make('password')
                             ->password()
+                            ->hiddenOn('edit')
                             ->required(fn (string $operation): bool => $operation === 'create')
                             ->dehydrated(fn ($state) => filled($state))
                             ->dehydrateStateUsing(fn ($state) => Hash::make($state))

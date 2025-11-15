@@ -1,15 +1,21 @@
 <?php
-// app/Filament/Resources/StudentResource/Pages/SemesterStudentRelationManager.php
 
 namespace App\Filament\Resources\Students\RelationManagers;
 
 use App\Helpers\Helpers;
-use Filament\Forms;
-use Filament\Schemas\Schema;
-use Filament\Tables;
-use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Model;
+use Filament\Actions\AttachAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\CreateAction;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\DetachAction;
+use Filament\Actions\DetachBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Forms\Components\TextInput;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Schema;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
 
 class SemestersRelationManager extends RelationManager
 {
@@ -19,29 +25,30 @@ class SemestersRelationManager extends RelationManager
     {
         return $schema
             ->components([
-                Forms\Components\Select::make('semester_id')
-                    ->relationship('semester', 'name')
-                    ->disabled(), // Show but don't allow changing semester
-
-                Forms\Components\TextInput::make('pivot.percentage')
+                TextInput::make('name')
+                    ->label('Semester')
+                    ->disabled(), // Show semester name but don't allow editing
+                TextInput::make('percentage')
                     ->label('Percentage')
                     ->numeric()
                     ->minValue(0)
                     ->maxValue(100)
                     ->required(),
-
             ]);
     }
-
-
 
     public function table(Table $table): Table
     {
         return $table
-            ->recordTitleAttribute('name')
+            ->recordTitleAttribute('semesters')
             ->columns([
-                Tables\Columns\TextColumn::make('name'),
-                Tables\Columns\TextColumn::make('paid_pct')
+                TextColumn::make('pivot.student_id')
+                ->label('Student ID'),
+                TextColumn::make('student_name')
+                    ->label('Name')
+                    ->getStateUsing(fn () => $this->getOwnerRecord()->name),
+                TextColumn::make('name'),
+                TextColumn::make('paid_pct')
                     ->label('Paid %')
                     ->getStateUsing(function ($record) {
                         return Helpers::getPaymentStatus(
@@ -64,11 +71,20 @@ class SemestersRelationManager extends RelationManager
                         return 'Required: ' . $status['required'] . '%';
                     }),
             ])
-            ->filters([])
-            ->headerActions([])
-            ->actions([
-//                Tables\Actions\EditAction::make(),
-//                Tables\Actions\DeleteAction::make(),
+            ->filters([
+                //
+            ])
+            ->headerActions([
+
+            ])
+            ->recordActions([
+                EditAction::make(),
+
+            ])
+            ->toolbarActions([
+                BulkActionGroup::make([
+
+                ]),
             ]);
     }
 }

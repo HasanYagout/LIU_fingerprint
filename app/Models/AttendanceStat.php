@@ -10,7 +10,7 @@ use Sushi\Sushi;
 
 class AttendanceStat extends Model
 {
-//    use Sushi;
+    use Sushi;
 
     protected $casts = [
         'start' => 'date',
@@ -28,51 +28,74 @@ class AttendanceStat extends Model
     }
     public function getRows(): array
     {
-
         $start = static::$startDate ?? now()->startOfDay();
         $end = static::$endDate ?? now()->endOfDay();
 
         $startFormatted = $start->format('Ymd');
         $endFormatted = $end->format('Ymd');
 
-
-
         try {
-            $response = Http::withBasicAuth(config('services.api.username'), config('services.api.password'))
-                ->timeout(10)
-                ->post('http://127.0.0.1:8001/api/stat', [
+            $response = Http::withBasicAuth(
+                config('services.api.username'),
+                config('services.api.password')
+            )
+                ->timeout(3)        // ⏳ hard timeout prevents UI freeze
+                ->connectTimeout(1) // ⚡ fail fast if API is down
+                ->post('http://192.168.1.102:2001/api/v1/attendance-stats', [
                     'startDate' => $startFormatted,
-                    'endDate' => $endFormatted,
+                    'endDate'   => $endFormatted,
                 ]);
-            if ($response->successful() && $response->json('success')) {
-                $stats = $response->json('dailyStats') ?? [];
-                return collect($stats)->map(function ($stat) {
-                    $date = Carbon::createFromFormat('Ymd', $stat['date'])->toDateString();
 
-
-                    return [
-                        'id' => $stat['date'],
-                        'title' => "Entries: {$stat['uniqueEntries']} (Unpaid: {$stat['uniqueNotPaidUsers']})",
-                        'start' => $date,
-                        'end' => $date,
-                        'unique_entries' => $stat['uniqueEntries'],
-                        'unique_entered_users' => $stat['uniqueEnteredUsers'],
-                        'unique_not_paid_users' => $stat['uniqueNotPaidUsers'],
-                    ];
-                })->toArray();
+            // API returned non-success → show error
+            if (!$response->successful() || !$response->json('success')) {
+                return [
+                    [
+                        'id' => 'error',
+                        'title' => '⚠ API Error (Failed Response)',
+                        'start' => now()->toDateString(),
+                        'end' => now()->toDateString(),
+                        'unique_entries' => 0,
+                        'unique_entered_users' => 0,
+                        'unique_not_paid_users' => 0,
+                    ]
+                ];
             }
 
-            Log::error('Attendance stats API request failed', [
-                'status' => $response->status(),
-                'response' => $response->body(),
-            ]);
+            // full success
+            $stats = $response->json('dailyStats') ?? [];
+
+            return collect($stats)->map(function ($stat) {
+                $date = Carbon::createFromFormat('Ymd', $stat['date'])->toDateString();
+                return [
+                    'id' => $stat['date'],
+                    'title' => "Entries: {$stat['uniqueEntries']} (Unpaid: {$stat['uniqueNotPaidUsers']})",
+                    'start' => $date,
+                    'end' => $date,
+                    'unique_entries' => $stat['uniqueEntries'],
+                    'unique_entered_users' => $stat['uniqueEnteredUsers'],
+                    'unique_not_paid_users' => $stat['uniqueNotPaidUsers'],
+                ];
+            })->toArray();
+
         } catch (\Exception $e) {
 
-            Log::error('Attendance stats API request exception', [
+            Log::error('Attendance stats API request failed', [
                 'error' => $e->getMessage(),
             ]);
-        }
 
-        return [];
+            // Fallback row when API is down
+            return [
+                [
+                    'id' => 'api-down',
+                    'title' => '❌ API Offline',
+                    'start' => now()->toDateString(),
+                    'end' => now()->toDateString(),
+                    'unique_entries' => 0,
+                    'unique_entered_users' => 0,
+                    'unique_not_paid_users' => 0,
+                ]
+            ];
+        }
     }
+
 }

@@ -3,13 +3,16 @@
 namespace App\Filament\Widgets;
 
 use App\Models\AttendanceStat;
-use Carbon\Carbon;
+use App\Services\AttendanceStatCache;
+use BezhanSalleh\FilamentShield\Traits\HasWidgetShield;
 use Filament\Widgets\ChartWidget;
 use Filament\Widgets\Concerns\InteractsWithPageFilters;
+use Illuminate\Support\Carbon;
 
 class StudentBarChart extends ChartWidget
 {
     use InteractsWithPageFilters;
+    use HasWidgetShield;
     protected ?string $heading = 'Monthly Student Entries';
     protected static bool $isLazy = true;
 
@@ -23,15 +26,9 @@ class StudentBarChart extends ChartWidget
         $end = Carbon::parse($endDate)->endOfDay();
 
 
-        // Fetch all data from the Sushi model.
-        AttendanceStat::setDateRange($start->format('Ymd'), $end->format('Ymd'));
-        $stats = collect((new AttendanceStat())->getRows());
+        $stats = AttendanceStatCache::get($start, $end);
 
-        // Group the statistics by month and year.
-        $monthlyStats = $stats->groupBy(function ($stat) {
-
-            return Carbon::parse($stat['start'])->format('Y-m');
-        });
+        $monthlyStats = $stats->groupBy(fn($stat) => Carbon::parse($stat['start'])->format('Y-m'));
 
         $labels = [];
         $totalEnteredData = [];

@@ -3,6 +3,8 @@
 namespace App\Filament\Widgets;
 
 use App\Models\AttendanceStat;
+use App\Services\AttendanceStatCache;
+use BezhanSalleh\FilamentShield\Traits\HasWidgetShield;
 use Filament\Widgets\ChartWidget;
 use Filament\Widgets\Concerns\InteractsWithPageFilters;
 use Illuminate\Support\Carbon;
@@ -10,6 +12,7 @@ use Illuminate\Support\Carbon;
 class StudentChart extends ChartWidget
 {
     use InteractsWithPageFilters;
+    use HasWidgetShield;
     protected ?string $heading = 'Student Entry Status';
     protected static bool $isLazy = true;
 
@@ -25,11 +28,8 @@ class StudentChart extends ChartWidget
         $start = Carbon::parse($startDate)->startOfDay();
         $end = Carbon::parse($endDate)->endOfDay();
 
-        // Tell AttendanceStat to fetch records for this range
-//        AttendanceStat::setDateRange($start->format('Ymd'), $end->format('Ymd'));
 
-        // ✅ Convert returned array into a collection
-        $stats = collect((new AttendanceStat())->getRows());
+        $stats = AttendanceStatCache::get($start, $end);
 
         // ✅ Now sums work
         $totalUnpaidUsers = $stats->sum('unique_not_paid_users');

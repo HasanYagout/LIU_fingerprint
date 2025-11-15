@@ -2,17 +2,23 @@
 
 namespace App\Filament\Widgets;
 
-use Carbon\Carbon;
+use App\Models\AttendanceStat;
+use App\Services\AttendanceStatCache;
+use BezhanSalleh\FilamentShield\Traits\HasWidgetShield;
+use Filament\Widgets\Concerns\InteractsWithPageFilters;
 use Guava\Calendar\Filament\CalendarWidget;
 use Guava\Calendar\ValueObjects\CalendarEvent;
 use Guava\Calendar\ValueObjects\FetchInfo;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 
 class MyCalendarWidget extends CalendarWidget
 {
-    protected static ?int $sort = 1;
+    use InteractsWithPageFilters;
+    use HasWidgetShield;
+    protected static ?int $sort = 2;
 
     /**
      * @throws ConnectionException
@@ -22,35 +28,39 @@ class MyCalendarWidget extends CalendarWidget
     protected function config(): array
     {
         return [
-            'eventClick' => true,  // ✅ enable click handling
+            'eventClick' => true,
         ];
     }
+
     protected function getEvents(FetchInfo $info): Collection
     {
-        $response = Http::withBasicAuth(
-            config('services.api.username'),
-            config('services.api.password'),
-        )->post('http://127.0.0.1:8001/api/stat');
-        $data = $response->json();
-        $dailyStats = collect($data['dailyStats'] ?? []);
+        // Get filters
+        $startInput = $this->filters['startDate'] ?? now();
+        $endInput = $this->filters['endDate'] ?? now();
+
+        // Parse to Carbon objects for filtering
+        $start = Carbon::parse($startInput)->startOfDay();
+        $end = Carbon::parse($endInput)->endOfDay();
+        $dailyStats = AttendanceStatCache::get($start, $end);
 
         return $dailyStats->map(function ($day) {
-
-            $date = Carbon::createFromFormat('Ymd', $day['date'])->toDateString();
-
             return CalendarEvent::make()
-                ->title("Entries: {$day['uniqueEntries']}")
-                ->start($date)
-                ->end($date)
+                ->title("Entries: {$day['unique_entered_users']} (Unpaid: {$day['unique_not_paid_users']})")
+                ->start($day['start'])
+                ->end($day['end'])
                 ->allDay(true)
                 ->backgroundColor('#3B82F6')
-
-                // ✅ Add event click URL
-                ->url(route('filament.admin.pages.attendance-logs', ['date' => $date]))
-            ->extendedProp('uniqueEntries', $day['uniqueEntries'])
-                ->extendedProp('uniqueEnteredUsers', $day['uniqueEnteredUsers'])
-                ->extendedProp('uniqueNotPaidUsers', $day['uniqueNotPaidUsers']);
+                ->url(route('filament.admin.pages.attendance-logs', ['date' => $day['start']]))
+                ->extendedProp('uniqueEntries', $day['unique_entries'])
+                ->extendedProp('uniqueEnteredUsers', $day['unique_entered_users'])
+                ->extendedProp('uniqueNotPaidUsers', $day['unique_not_paid_users']);
         });
+    }
+
+    // Add this method to automatically refresh when filters change
+    public static function shouldRefreshOnPageFilter(): bool
+    {
+        return true;
     }
 
     protected function headerFormats(): array
@@ -80,5 +90,17 @@ class MyCalendarWidget extends CalendarWidget
     protected function calendarHeight(): string
     {
         return '600px';
+    }
+
+    protected function getListeners(): array
+    {
+        return [
+            'updateCalendar' => 'refreshCalendar',
+        ];
+    }
+
+    public function refreshCalendar(): void
+    {
+        $this->refreshRecords();
     }
 }

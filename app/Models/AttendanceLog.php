@@ -6,37 +6,30 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Pagination\LengthAwarePaginator;
+use Sushi\Sushi;
 
 class AttendanceLog extends Model
 {
+    use Sushi;
+
     protected $schema = [
         'C_Date'   => 'string',
         'C_Time'   => 'string',
         'C_Name'   => 'string',
-        'C_Unique' => 'string',
+        'L_UID'     =>  'string',
         'L_Mode'   => 'integer',
         'L_Result' => 'integer',
     ];
-    protected $table = null;
-    protected $connection = 'none';
-
-    // Override newBaseQueryBuilder to stop SQL queries
-    protected function newBaseQueryBuilder()
-    {
-        throw new \Exception('AttendanceLog does not use the database.');
-    }
 
     protected static $date;
     protected static $studentId;
     protected static $currentPage = 1;
-    public static $itemsPerPage = 30;
+    public static $lastError = null;
+
+    protected static $itemsPerPage = 100;
     public static $totalRecords = 0;
 
-    /**
-     * Set search parameters for API request.
-     */
-    public static function setSearchParameters($date, $studentId = null, $page = 1, $perPage = 10)
+    public static function setSearchParameters($date, $studentId = null, $page = 1, $perPage = 100)
     {
         static::$date = $date;
         static::$studentId = $studentId;
@@ -45,96 +38,64 @@ class AttendanceLog extends Model
         static::clearBootedModels();
     }
 
-    /**
-     * Fetch rows from API and return paginated result.
-     */
-    public function getRowsPaginated(): LengthAwarePaginator
+    public function getRows(): array
     {
         if (!static::$date) {
-            return new LengthAwarePaginator([], 0, static::$itemsPerPage, static::$currentPage);
+            return [];
         }
 
         try {
-            // Build query parameters for GET request
-            $queryParams = [
+            $payload = [
                 'date' => Carbon::parse(static::$date)->format('Ymd'),
                 'page' => static::$currentPage,
                 'pageSize' => static::$itemsPerPage,
             ];
 
-            // Add student_id to query params if provided
             if (!empty(static::$studentId)) {
-                $queryParams['student_id'] = static::$studentId;
+                $payload['uniqueId'] = static::$studentId;
             }
 
-            // Build the URL with query parameters
-            $url = 'http://127.0.0.1:8001/api/local-data?' . http_build_query($queryParams);
-
-            // Debug the API request
-            \Log::info('Making API Request:', [
-                'url' => $url,
-                'query_params' => $queryParams,
-                'student_id' => static::$studentId
-            ]);
-
-            $response = Http::withBasicAuth(
-                config('services.api.username', 'admin'),
-                config('services.api.password', 'password')
-            )->timeout(30)
-                ->get($url); // No need to pass payload separately for GET
+            // ⛔️ Prevent UI freezing — add timeout & connection timeout
+            $response = Http::timeout(3)     // max 3 seconds
+            ->connectTimeout(2)          // fail connection after 2 seconds
+            ->withBasicAuth(
+                config('services.api.username'),
+                config('services.api.password')
+            )
+                ->post('http://192.168.1.102:2001/api/v1/attendance-logs', $payload);
 
             if ($response->successful()) {
+                static::$lastError = null; // clear old error
                 $data = $response->json();
 
-                \Log::info('API Response Received:', [
-                    'success' => $data['success'] ?? false,
-                    'total_logs' => count($data['logs'] ?? []),
-                    'pagination' => $data['pagination'] ?? [],
-                    'search_filter' => $data['searchFilter'] ?? []
-                ]);
+                static::$totalRecords = $data['pagination']['totalRecords']
+                    ?? count($data['logs'] ?? []);
 
-                $items = $data['logs'] ?? [];
-                $pagination = $data['pagination'] ?? [];
-
-                $totalRecords = $pagination['totalRecords'] ?? count($items);
-                $currentPage = $pagination['currentPage'] ?? static::$currentPage;
-                $pageSize = $pagination['pageSize'] ?? static::$itemsPerPage;
-
-                static::$totalRecords = $totalRecords;
-
-                return new LengthAwarePaginator(
-                    $items,
-                    $totalRecords,
-                    $pageSize,
-                    $currentPage,
-                    [
-                        'path' => request()->url(),
-                        'query' => request()->query(),
-                    ]
-                );
-            } else {
-                \Log::error('API Request Failed', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                    'url' => $url
-                ]);
+                return $data['logs'] ?? [];
             }
 
+// API FAIL (400, 500...)
+            static::$lastError = "Attendance service is currently unavailable. Please try again later.";
+            return [];
+
+
+
         } catch (\Exception $e) {
-            \Log::error('Attendance logs API exception', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
+            static::$lastError = "Attendance service is currently unavailable. Please try again later.";
+            return [];
         }
 
-        return new LengthAwarePaginator([], 0, static::$itemsPerPage, static::$currentPage);
+        // Always return empty on any kind of failure
+        return [];
     }
 
-    /**
-     * Get current items per page.
-     */
-    public function getPerPage(): int
+    public function getPerPage()
     {
         return static::$itemsPerPage;
+    }
+
+    protected function sushiShouldCache()
+    {
+        return false;
     }
 }

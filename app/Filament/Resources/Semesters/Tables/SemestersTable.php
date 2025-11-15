@@ -53,7 +53,6 @@ class SemestersTable
                         if (!$data['value']) {
                             return;
                         }
-
                         $query->where('semesters.name', 'like', "%{$data['value']}%");
                     })
             ])

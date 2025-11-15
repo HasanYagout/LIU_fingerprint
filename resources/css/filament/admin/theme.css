@@ -1,0 +1,14 @@
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+
+@source '../../../../app/Filament/**/*';
+@source '../../../../resources/views/filament/**/*';
+
+.fi-ta-header-cell  {
+    @apply  bg-[#003875] text-white;
+
+}
+
+.fi-ta-actions-header-cell.fi-ta-empty-header-cell {
+    /* your styles here */
+    @apply  bg-[#003875] text-white;
+}

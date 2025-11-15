@@ -9,6 +9,7 @@ use Filament\Schemas\Schema;
 
 class SemesterForm
 {
+
     public static function configure(Schema $schema): Schema
     {
         return $schema
@@ -19,11 +20,14 @@ class SemesterForm
                 DatePicker::make('start_date')
                     ->required()
                     ->native(false)
+                    ->closeOnDateSelection()
+                    ->before('midterm_date')
                     ->format('d-m-Y')
                     ->displayFormat('d-m-Y'),
 
                 DatePicker::make('midterm_date')
                     ->required()
+                    ->closeOnDateSelection()
                     ->native(false)
                     ->after('start_date')
                     ->displayFormat('Y-m-d'),
@@ -31,6 +35,8 @@ class SemesterForm
                 DatePicker::make('end_date')
                     ->native(false)
                     ->required()
+                    ->closeOnDateSelection()
+                    ->after('start_date')
                     ->after('midterm_date')
                     ->displayFormat('Y-m-d'),
 

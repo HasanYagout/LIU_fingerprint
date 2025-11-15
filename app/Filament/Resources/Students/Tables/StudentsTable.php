@@ -3,14 +3,24 @@
 namespace App\Filament\Resources\Students\Tables;
 
 use App\Helpers\Helpers;
+use App\Imports\StudentsImport;
+use App\Models\Semester;
 use App\Models\Student;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Select;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Storage;
+use Maatwebsite\Excel\Facades\Excel;
+
+
 
 class StudentsTable
 {
@@ -22,16 +32,23 @@ class StudentsTable
                     ->with('semesters')
                     ->join('semester_student', 'students.student_id', '=', 'semester_student.student_id')
                     ->join('semesters', 'semester_student.semester_id', '=', 'semesters.id')
-                    ->where('semesters.status', 1) // Filter by active status directly
                     ->select([
-                        'students.*',
+                        'students.student_id as student_id',
+                        'students.name as student_name',
+                        'students.major',
+                        'students.created_at',
+                        'students.updated_at',
                         'semesters.name as semester_name',
                         'semesters.id as semester_id',
                         'semester_student.percentage as pivot_percentage',
-
                     ])
-                    ->distinct('students.id'),
+                    ->groupBy('students.student_id', 'students.name', 'students.major', 'students.created_at', 'students.updated_at')
 
+            )
+            ->headerActions(
+               [
+
+               ]
             )
             ->columns([
                 TextColumn::make('student_id')
@@ -39,25 +56,14 @@ class StudentsTable
                     ->searchable(query: function (Builder $query, string $search) {
                         $query->where('students.student_id', 'like', "%{$search}%");
                     })
-                    ->sortable(),
+                    ->sortable('student_id'),
 
-                TextColumn::make('name')
+                TextColumn::make('student_name')
                     ->label('Full Name')
                     ->searchable(query: function (Builder $query, string $search) {
                         $query->where('students.name', 'like', "%{$search}%");
                     })
-                    ->sortable(),
-
-                TextColumn::make('semester_name')
-                    ->label('Semester')
-                    ->searchable(query: function (Builder $query, string $search) {
-                        $query->where('semesters.name', 'like', "%{$search}%");
-                    })
-                    ->sortable(),
-
-
-
-
+                    ->sortable('student_name'), // fully qualified column
                 TextColumn::make('major')
                     ->label('Major')
                     ->searchable(query: function (Builder $query, string $search) {
@@ -90,9 +96,7 @@ class StudentsTable
                 EditAction::make(),
             ])
             ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
-            ]);
+
+            ])->defaultPaginationPageOption(50);
     }
 }
