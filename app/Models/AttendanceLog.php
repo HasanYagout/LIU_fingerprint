@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Helpers\Helpers;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Model;
@@ -74,14 +75,12 @@ class AttendanceLog extends Model
                 return $data['logs'] ?? [];
             }
 
-// API FAIL (400, 500...)
-            static::$lastError = "Attendance service is currently unavailable. Please try again later.";
-            return [];
+
 
 
 
         } catch (\Exception $e) {
-            static::$lastError = "Attendance service is currently unavailable. Please try again later.";
+            Helpers::notify('Attendance service is currently unavailable.');
             return [];
         }
 

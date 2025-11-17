@@ -1,6 +1,7 @@
 <?php
 namespace App\Models;
 
+use App\Helpers\Helpers;
 use Filament\Widgets\Concerns\InteractsWithPageFilters;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Carbon;
@@ -78,6 +79,7 @@ class AttendanceStat extends Model
             })->toArray();
 
         } catch (\Exception $e) {
+            Helpers::notify('Attendance service is currently unavailable.');
 
             Log::error('Attendance stats API request failed', [
                 'error' => $e->getMessage(),

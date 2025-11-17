@@ -34,6 +34,8 @@ class MyCalendarWidget extends CalendarWidget
 
     protected function getEvents(FetchInfo $info): Collection
     {
+        sleep(1); // Delay before widget refresh to avoid flicker
+
         // Get filters
         $startInput = $this->filters['startDate'] ?? now();
         $endInput = $this->filters['endDate'] ?? now();

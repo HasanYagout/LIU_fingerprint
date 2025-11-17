@@ -123,14 +123,7 @@ class AttendanceLogs extends Page implements HasForms, HasTable
 
         $items = AttendanceLog::all();
 
-        if (AttendanceLog::$lastError) {
-            Notification::make()
-                ->title('API Error')
-                ->body(AttendanceLog::$lastError)
-                ->danger()
-                ->persistent() // stays until closed
-                ->send();
-        }
+
 
         $items = $items->sortByDesc(fn($i) => $i->C_Date . $i->C_Time)->values();
 

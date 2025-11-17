@@ -6,9 +6,12 @@ namespace App\Helpers;
 use App\Models\Student;
 use App\Models\Semester;
 use Carbon\Carbon;
+use Filament\Notifications\Notification;
 
 class Helpers
 {
+    protected static $notified = false;
+
     /**
      * @param  int          $studentCode    students.student_id
      * @param  int          $semesterId     semesters.id
@@ -141,4 +144,20 @@ class Helpers
         ];
     }
 
+
+    public static function notify(string $message = 'Service unavailable. Please try again later.')
+    {
+        if (cache()->get('api_notified')) {
+            return;
+        }
+
+        cache()->put('api_notified', true, now()->addSeconds(5));
+
+        Notification::make()
+            ->title('API Error')
+            ->body($message)
+            ->danger()
+            ->persistent()
+            ->send();
+    }
 }
