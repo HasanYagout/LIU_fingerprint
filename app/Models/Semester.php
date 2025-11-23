@@ -34,5 +34,11 @@ class Semester extends Model
             ->withPivot('percentage')
             ->withTimestamps();
     }
+    public function exceptions()
+    {
+        return $this->belongsToMany(Student::class, 'student_exceptions','semester_id','student_id')
+            ->withPivot(['reason', 'from_date', 'to_date', 'created_by'])
+            ->withTimestamps();
+    }
 
 }

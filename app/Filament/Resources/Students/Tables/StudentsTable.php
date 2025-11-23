@@ -73,17 +73,17 @@ class StudentsTable
 
                 TextColumn::make('pivot_percentage')
                     ->label('Paid %')
-                    ->getStateUsing(fn($record) => Helpers::getPaymentStatus(
+                    ->getStateUsing(fn($record) => Helpers::getStatus(
                         $record->student_id,
                         $record->semester_id
                     )['percentage'])
                     ->sortable('pivot_percentage')
-                    ->color(fn($record) => Helpers::getPaymentStatus(
+                    ->color(fn($record) => Helpers::getStatus(
                         $record->student_id,
                         $record->semester_id
-                    )['color'])
+                    )['status'])
                     ->description(fn($record) => 'Required: ' .
-                        Helpers::getPaymentStatus(
+                        Helpers::getStatus(
                             $record->student_id,
                             $record->semester_id
                         )['required'] . '%')
@@ -94,6 +94,7 @@ class StudentsTable
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
+
             ])
             ->toolbarActions([
 

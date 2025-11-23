@@ -28,7 +28,7 @@ class Helpers
         // 1) Define your thresholds (you can move these to config/payment_thresholds.php)
         $thresholds = [
             'start'   => 40,   // before midterm window
-            'midterm' => 50,   // two weeks either side of midterm
+            'midterm' => 40,   // two weeks either side of midterm
             'final'   => 100,  // two weeks before final
         ];
 
@@ -87,7 +87,7 @@ class Helpers
             return 100;
         } elseif ($now->gte($midtermThreshold)) {
             // After midterm threshold (two weeks before midterm) but before final threshold - require 50%
-            return 50;
+            return 40;
         } else {
             // Before midterm threshold - require 0%
             return 0;
@@ -104,7 +104,7 @@ class Helpers
         // Define thresholds
         $thresholds = [
             'start'   => 40,   // before midterm window
-            'midterm' => 50,   // two weeks either side of midterm
+            'midterm' => 40,   // two weeks either side of midterm
             'final'   => 100,  // two weeks before final
         ];
 
@@ -133,7 +133,7 @@ class Helpers
         $paid = $pivot ? (int) $pivot->percentage : 0;
 
         // Decide badge color
-        $color = ($paid >= $required) ? 'success' : 'failed';
+        $color = ($paid >= $required) ? 'success' : 'danger';
 
 
         return [

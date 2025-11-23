@@ -20,7 +20,7 @@ class StatOverview extends StatsOverviewWidget
     protected static ?int $sort=1;
     protected function getStats(): array
     {
-        sleep(1); // Delay before widget refresh to avoid flicker
+
 
         $data = $this->getFilteredData();
 

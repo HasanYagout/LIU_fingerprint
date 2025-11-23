@@ -20,7 +20,7 @@ class StudentChart extends ChartWidget
     public ?array $filterData;
     protected function getData(): array
     {
-        sleep(1); // Delay before widget refresh to avoid flicker
+
 
         $filters = $this->filters;
 

@@ -51,20 +51,20 @@ class SemestersRelationManager extends RelationManager
                 TextColumn::make('paid_pct')
                     ->label('Paid %')
                     ->getStateUsing(function ($record) {
-                        return Helpers::getPaymentStatus(
+                        return Helpers::getStatus(
                             $this->getOwnerRecord()->student_id, // Get student_id from parent record
                             $record->id // semester_id from related record
                         )['percentage'];
                     })
                     ->color(function ($record) {
-                        return Helpers::getPaymentStatus(
+                        return Helpers::getStatus(
                             $this->getOwnerRecord()->student_id,
                             $record->id
-                        )['color'];
+                        )['status'];
                     })
                     ->sortable()
                     ->description(function ($record) {
-                        $status = Helpers::getPaymentStatus(
+                        $status = Helpers::getStatus(
                             $this->getOwnerRecord()->student_id,
                             $record->id
                         );

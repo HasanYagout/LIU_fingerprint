@@ -57,4 +57,8 @@ class CreateStudent extends CreateRecord
             throw $e; // Re-throw the exception
         }
     }
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
+    }
 }

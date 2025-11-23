@@ -18,6 +18,7 @@ class Dashboard extends BaseDashboard
 
     protected int | string | array $columnSpan = 'full';
 
+
     public static function canAccess(): bool
     {
         return auth()->check() && auth()->user()->hasPermissionTo('View:Dashboard');
@@ -61,6 +62,7 @@ class Dashboard extends BaseDashboard
                                     ->native(false)
                                     ->default(now()->startOfMonth()->format('Y-m-d'))
                                     ->formatStateUsing(fn ($state) => Carbon::parse($state)->format('Y-m-d'))
+                                    ->closeOnDateSelection()
                                     ->reactive() // Add this to make it reactive
                                     ->afterStateUpdated(function ($state) {
                                         // Trigger refresh when state changes
@@ -79,6 +81,7 @@ class Dashboard extends BaseDashboard
                                     ->columnSpan(1)
                                     ->native(false)
                                     ->default(now()->endOfMonth())
+                                    ->closeOnDateSelection()
                                     ->formatStateUsing(fn ($state) => Carbon::parse($state)->format('Y-m-d'))
                                     ->reactive() // Add this to make it reactive
                                     ->afterStateUpdated(function ($state) {

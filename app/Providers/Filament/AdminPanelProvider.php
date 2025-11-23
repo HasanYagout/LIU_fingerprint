@@ -58,7 +58,8 @@ class AdminPanelProvider extends PanelProvider
             ->collapsedSidebarWidth('64px')
             ->sidebarCollapsibleOnDesktop()
             ->plugins([
-                FilamentShieldPlugin::make(),
+                FilamentShieldPlugin::make()
+                ->globallySearchable(false),
             ])
             ->middleware([
                 EncryptCookies::class,

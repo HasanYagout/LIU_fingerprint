@@ -19,7 +19,6 @@ class StudentBarChart extends ChartWidget
     protected static ?int $sort=3;
     protected function getData(): array
     {
-        sleep(1); // Delay before widget refresh to avoid flicker
 
         $filters = $this->filters;
         $startDate = $filters['startDate'] ?? now()->startOfMonth()->format('Y-m-d');

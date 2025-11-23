@@ -15,6 +15,7 @@ class StudentForm
             ->components([
                 TextInput::make('id')
                     ->label('Student ID')
+                    ->numeric()
                     ->required()
                     ->hiddenOn('edit')
                     ->unique(ignoreRecord: true)
